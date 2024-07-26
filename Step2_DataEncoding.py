@@ -105,7 +105,7 @@ class DataEncoding:
 if __name__ == '__main__':
     vocab_dir = '.'
     obj = DataEncoding(vocab_dir=vocab_dir)
-    traindata, testdata = obj.Getdata.ByCancer(random_seed=1)
+    traindata, testdata = obj.Getdata.ByCancer(random_seed=np.random.randint(0, 100))
 
     traindata, train_rnadata, testdata, test_rnadata = obj.encode(
         traindata=traindata,

@@ -3,6 +3,7 @@ import torch
 import candle
 from candle.file_utils import get_file
 import subprocess
+import numpy as np
 from Step3_model import *
 from Step2_DataEncoding import DataEncoding
 from cross_study_validation import run_cross_study_analysis
@@ -215,7 +216,7 @@ class DataLoader:
                                args.sample_id, args.target_id, args.drug_id)
 
             train_drug, test_drug = obj.Getdata.ByCancer(
-                random_seed=args.rng_seed)
+                random_seed=np.random.randint(0, 100))
 
             train_drug, train_rna, test_drug, test_rna = obj.encode(
                 traindata=train_drug,

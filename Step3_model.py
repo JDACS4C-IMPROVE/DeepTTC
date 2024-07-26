@@ -428,7 +428,7 @@ if __name__ == '__main__':
     obj = DataEncoding(vocab_dir=vocab_dir)
 
     # 切分完成
-    traindata, testdata = obj.Getdata.ByCancer(random_seed=1)
+    traindata, testdata = obj.Getdata.ByCancer(random_seed=np.random.randint(0, 100))
     # encoding 完成
     traindata, train_rnadata, testdata, test_rnadata = obj.encode(
         traindata=traindata,
