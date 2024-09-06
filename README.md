@@ -57,13 +57,13 @@ csa_data/raw_data/
     └── response.tsv
 ```
 
-Note that `./_original_data` contains data files that were used to train and evaluate the GraphDRP for the original paper.
+Note that `./_original_data` contains data files that were used to train and evaluate the DeepTTC for the original paper.
 
 
 ## Model scripts and parameter file
 + `deepttc_preprocess_improve.py` - takes benchmark data files and transforms into files for trianing and inference
 + `deepttc_train_improve.py` - trains the DeepTTC model
-+ `deepttc_infer_improve.py` - runs inference with the trained GraphDRP model
++ `deepttc_infer_improve.py` - runs inference with the trained DeepTTC model
 + `DeepTTC.default` - default parameter file
 
 
@@ -90,7 +90,7 @@ source setup_improve.sh
 
 This will:
 1. Download cross-study analysis (CSA) benchmark data into `./csa_data/`.
-2. Clone IMPROVE repo (checkout tag `v0.0.3-beta`) outside the GraphDRP model repo
+2. Clone IMPROVE repo (checkout tag `v0.0.3-beta`) outside the DeepTTC model repo
 3. Set up env variables: `IMPROVE_DATA_DIR` (to `./csa_data/`) and `PYTHONPATH` (adds IMPROVE repo).
 
 
@@ -120,7 +120,7 @@ ml_data
 ```
 
 
-### 5. Train GraphDRP model
+### 5. Train DeepTTC model
 ```bash
 python deepttc_train_improve.py
 ```
