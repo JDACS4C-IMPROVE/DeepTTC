@@ -84,7 +84,7 @@ def run(params):
              specified metrics.
     :rtype: float list
     """
-    model_dir = Path(params["model_outdir"])
+    model_dir = Path(params["output_dir"])
     data_dir = Path(params["train_ml_data_dir"])
     train_data_path = data_dir/'train.h5'
     val_data_path = data_dir/'val.h5'
@@ -157,10 +157,12 @@ def run(params):
 def main():
     filepath = Path(__file__).resolve().parent
     additional_definitions = preprocess_params + train_params
-    params = frm.initialize_parameters(filepath,
-                                       default_model="DeepTTC.default",
-                                       additional_definitions=additional_definitions
-                                       )
+    params = frm.initialize_parameters(
+        filepath,
+        default_model="DeepTTC.default",
+        additional_definitions=additional_definitions,
+        required=None,
+    )
     run(params)
     print("\nFinished training DeepTTC model.")
 
