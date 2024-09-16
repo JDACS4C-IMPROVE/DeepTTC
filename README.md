@@ -2,10 +2,6 @@
 
 This repository demonstrates how to use the [IMPROVE library v0.1.0-alpha](https://github.com/JDACS4C-IMPROVE/IMPROVE/tree/v0.1.0-alpha) for building a drug response prediction (DRP) model using DeepTTC, and provides examples with the benchmark [cross-study analysis (CSA) dataset](https://web.cels.anl.gov/projects/IMPROVE_FTP/candle/public/improve/benchmarks/single_drug_drp/benchmark-data-pilot1/csa_data/).
 
-This version, tagged as `v0.0.3-beta`, is the final release before transitioning to `v0.1.0-alpha`, which introduces a new API. Version `v0.0.3-beta` and all previous releases have served as the foundation for developing essential components of the IMPROVE software stack. Subsequent releases build on this legacy with an updated API, designed to encourage broader adoption of IMPROVE and its curated models by the research community.
-
-A more detailed tutorial can be found [here](https://jdacs4c-improve.github.io/docs/v0.0.3-beta/content/ModelContributorGuide.html).
-
 
 ## Dependencies
 Installation instuctions are detialed below in [Step-by-step instructions](#step-by-step-instructions).
@@ -16,7 +12,7 @@ ML framework:
 + [Torch](https://pytorch.org/) -- deep learning framework for building the prediction model
 
 IMPROVE dependencies:
-+ [IMPROVE v0.0.3-beta](https://github.com/JDACS4C-IMPROVE/IMPROVE/tree/v0.0.3-beta)
++ [IMPROVE vv0.1.0-alpha](https://github.com/JDACS4C-IMPROVE/IMPROVE/tree/v0.1.0-alpha)
 + [candle_lib](https://github.com/ECP-CANDLE/candle_lib) - IMPROVE dependency (enables various hyperparameter optimization on HPC machines) `TODO`: need to fork into IMPROVE project and tag
 
 
@@ -80,7 +76,7 @@ git checkout v0.0.3-beta
 
 ### 2. Set computational environment
 
-Check [conda_env_py37.sh](./conda_env_py37.sh)
+Check [conda_env.sh](./conda_env.sh)
 
 
 ### 3. Run `setup_improve.sh`.
@@ -90,8 +86,8 @@ source setup_improve.sh
 
 This will:
 1. Download cross-study analysis (CSA) benchmark data into `./csa_data/`.
-2. Clone IMPROVE repo (checkout tag `v0.0.3-beta`) outside the DeepTTC model repo
-3. Set up env variables: `IMPROVE_DATA_DIR` (to `./csa_data/`) and `PYTHONPATH` (adds IMPROVE repo).
+2. Clone IMPROVE repo (checkout tag `v0.1.0-alpha`) outside the DeepTTC model repo
+3. Set up env variables: `IMPROVE_DATA_DIR` (to `./csa_data/raw_data`) and `PYTHONPATH` (adds IMPROVE repo).
 
 
 ### 4. Preprocess CSA benchmark data (_raw data_) to construct model input data (_ML data_)
