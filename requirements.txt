@@ -5,3 +5,7 @@ pyarrow
 h5py
 pandas
 numpy
+biopython=1.78
+nltk=3.8.1
+scikit-learn=1.2.2
+pubchempy==1.0.4
