@@ -84,7 +84,7 @@ def run(params):
     # ------------------------------------------------------
     # [Req] Create data names for test set
     # ------------------------------------------------------
-    test_data_fname = frm.build_ml_data_name(params, stage="test")
+    test_data_fname = frm.build_ml_data_file_name(params['data_format'], stage="test")
 
     # ------------------------------------------------------
     # Prepare dataloaders to load model input data (ML data)
@@ -96,7 +96,7 @@ def run(params):
     print(test_data_fname)
     test_ml_data_dir = params['input_data_dir']
     # params['test_data_processed']
-    test_file_name = frm.build_ml_data_name(params, stage="test")
+    test_file_name = frm.build_ml_data_file_name(params['data_format'], stage="test")
     test_data_path = f'{test_ml_data_dir}/{test_file_name}'
     test_data = {}
     test_data['drug'] = pd.read_hdf(test_data_path, key='drug')
@@ -107,8 +107,10 @@ def run(params):
     # Load best model and compute predictions
     # ------------------------------------------------------
     # Load the best saved model (as determined based on val data)
-    modelpath = modelpath = frm.build_model_path(
-        params, model_dir=params["input_model_dir"])  # [Req]
+    # build_model_path(model_file_name: str, model_file_format: str, model_dir: Union[Path, str])
+    modelpath = frm.build_model_path( params['model_file_name'], params['model_file_format'], model_dir=params["input_model_dir"])
+    # modelpath = modelpath = frm.build_model_path(
+    #     params, model_dir=params["input_model_dir"])  # [Req]
 
     def determine_device(cuda_name_from_params):
         """Determine device to run PyTorch functions.

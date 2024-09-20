@@ -67,8 +67,8 @@ def run(params):
     :rtype: float list
     """
     data_dir = Path(params["input_dir"])
-    train_data_path = data_dir/frm.build_ml_data_name(params, stage="val")
-    val_data_path = data_dir/frm.build_ml_data_name(params, stage="val")
+    train_data_path = data_dir/frm.build_ml_data_file_name(params['data_format'], stage="val")
+    val_data_path = data_dir/frm.build_ml_data_file_name(params['data_format'], stage="val")
     # test_data_path = model_dir/'test.h5'
 
     train_data = {}
@@ -81,7 +81,8 @@ def run(params):
         val_data_path, key='gene_expression')
     # test_data = pickle.load(open(test_data_path, 'rb'))
     modeldir = params['output_dir']
-    modelpath = frm.build_model_path(params,
+    # build_model_path(model_file_name: str, model_file_format: str, model_dir: Union[Path, str])
+    modelpath = frm.build_model_path(params['model_file_name'], params['model_file_format'],
                                      model_dir=params["output_dir"])
 
     if not os.path.exists(modeldir):

@@ -177,6 +177,7 @@ def _download_default_dataset(default_data_url):
     if not os.path.isdir(OUT_DIR):
         os.mkdir(OUT_DIR)
     url = url.strip('\'')
+    # breakpoint()
     subprocess.run(['wget', '--recursive', '--no-clobber', '-nH',
                     f'--cut-dirs={url_length}', '--no-parent', f'--directory-prefix={OUT_DIR}', f'{url}'])
 
@@ -388,8 +389,8 @@ def build_stage_dependent_data(params: Dict,
     # fname = f"{stage}_{params['y_data_suffix']}.csv"
     df_gene_expression = data[gene_expression_columns]
     df_drug = data[drug_columns]
-    out_path = os.path.join(params["output_dir"], frm.build_ml_data_name(
-        params, stage=stage))  # f'{stage}_data.h5')
+    out_path = os.path.join(params["output_dir"], frm.build_ml_data_file_name(
+        params['data_format'], stage=stage))  # f'{stage}_data.h5')
     print(out_path)
     df_output = {'drug': df_drug, 'gene_expression': df_gene_expression}
     for key in df_output:
@@ -399,7 +400,7 @@ def build_stage_dependent_data(params: Dict,
     data[params['y_col_name']] = data['Label']
     y_df = pd.DataFrame(
         data[['Label', params['y_col_name'], params['canc_col_name'], params['drug_col_name']]])
-    frm.save_stage_ydf(y_df, params, stage)
+    frm.save_stage_ydf(y_df, stage, output_dir=params['output_dir'])
 
     return scaler
 
