@@ -1,0 +1,12 @@
+tables
+torch
+tensorflow
+keras
+pyarrow
+h5py
+pandas
+numpy
+subword-nmt
+prettytable
+pubchempy
+rdkit

@@ -1,51 +1,170 @@
 # DeepTTC
-DeepTTC: a transformer-based model for predicting cancer drug response
 
-Identification of new lead molecules for treatment  of cancer is often the result of more than a decade of dedicated efforts. Before these painstakingly selected drug candidates are used in clinic , their anti-cancer activity was generally varified by vitro cell experiments. Therefore, accurately prediction  cancer drug response is the key and challenging task in anti-cancer drugs design and precision medicine. With the development of pharmacogenomics, combining efficient methods of extracting drug features and omic data makes it possible to improve drug response prediction. In this study, we propose DeepTTC, an novel  end-to-end deep learning model to predict the anti-cancer drug response. DeepTTC takes gene expression data and chemical strcutures  of drug for drug response prediction. Specifically, get inspiration from natural language processing, DeepTTC use  transformer for drug representation learning. Compared to existing methods, DeepTTC achieved higher performance in terms of RMSE, Pearson correlation coefficient and Spearman's rank correlation coefficient on multiple test sets. Moreover, we explorated  identify multiple clinical  indications anti-cancer drugs. With the outstanding preformance, DeepTTC is expected to the  most effective in silico  measure  in cancer drug design.
+This repository demonstrates how to use the [IMPROVE library v0.1.0-alpha](https://github.com/JDACS4C-IMPROVE/IMPROVE/tree/v0.1.0-alpha) for building a drug response prediction (DRP) model using DeepTTC, and provides examples with the benchmark [cross-study analysis (CSA) dataset](https://web.cels.anl.gov/projects/IMPROVE_FTP/candle/public/improve/benchmarks/single_drug_drp/benchmark-data-pilot1/csa_data/).
 
-## Install
+This version, tagged as `v0.0.3-beta`, is the final release before transitioning to `v0.1.0-alpha`, which introduces a new API. Version `v0.0.3-beta` and all previous releases have served as the foundation for developing essential components of the IMPROVE software stack. Subsequent releases build on this legacy with an updated API, designed to encourage broader adoption of IMPROVE and its curated models by the research community.
 
-```          
-biopython            1.78                                          
-matplotlib           3.1.3                      
-numpy                1.18.1                        
-pandas               1.0.3                      
-Pillow               7.0.0                                       
-prettytable          0.7.2                                             
-requests             2.23.0                     
-scikit-learn         0.22.1                         
-scipy                1.4.1              
-subword-nmt          0.3.7              
-tensorboard          2.1.0              
-terminado            0.8.3                           
-torch                1.4.0              
-torchsummary         1.5.1              
-torchvision          0.5.0                         
+A more detailed tutorial can be found [here](https://jdacs4c-improve.github.io/docs/v0.0.3-beta/content/ModelContributorGuide.html).
 
-conda create -n CancerTrans python=3.5
-conda activate CancerTrans
-conda install -c rdkit rdkit
-pip install pubchempy
 
+## Dependencies
+Installation instuctions are detialed below in [Step-by-step instructions](#step-by-step-instructions).
+
+Conda `yml` file `environment_no_candle.yml`
+
+ML framework:
++ [Torch](https://pytorch.org/) -- deep learning framework for building the prediction model
+
+IMPROVE dependencies:
++ [IMPROVE v0.0.3-beta](https://github.com/JDACS4C-IMPROVE/IMPROVE/tree/v0.0.3-beta)
+
+
+
+## Dataset
+Benchmark data for cross-study analysis (CSA) can be downloaded from this [site](https://web.cels.anl.gov/projects/IMPROVE_FTP/candle/public/improve/benchmarks/single_drug_drp/benchmark-data-pilot1/csa_data/).
+
+The data tree is shown below:
+```
+csa_data/raw_data/
+├── splits
+│   ├── CCLE_all.txt
+│   ├── CCLE_split_0_test.txt
+│   ├── CCLE_split_0_train.txt
+│   ├── CCLE_split_0_val.txt
+│   ├── CCLE_split_1_test.txt
+│   ├── CCLE_split_1_train.txt
+│   ├── CCLE_split_1_val.txt
+│   ├── ...
+│   ├── GDSCv2_split_9_test.txt
+│   ├── GDSCv2_split_9_train.txt
+│   └── GDSCv2_split_9_val.txt
+├── x_data
+│   ├── cancer_copy_number.tsv
+│   ├── cancer_discretized_copy_number.tsv
+│   ├── cancer_DNA_methylation.tsv
+│   ├── cancer_gene_expression.tsv
+│   ├── cancer_miRNA_expression.tsv
+│   ├── cancer_mutation_count.tsv
+│   ├── cancer_mutation_long_format.tsv
+│   ├── cancer_mutation.parquet
+│   ├── cancer_RPPA.tsv
+│   ├── drug_ecfp4_nbits512.tsv
+│   ├── drug_info.tsv
+│   ├── drug_mordred_descriptor.tsv
+│   └── drug_SMILES.tsv
+└── y_data
+    └── response.tsv
+```
+
+Note that `./_original_data` contains data files that were used to train and evaluate the DeepTTC for the original paper.
+
+
+## Model scripts and parameter file
++ `deepttc_preprocess_improve.py` - takes benchmark data files and transforms into files for trianing and inference
++ `deepttc_train_improve.py` - trains the DeepTTC model
++ `deepttc_infer_improve.py` - runs inference with the trained DeepTTC model
++ `DeepTTC.default` - default parameter file
+
+
+
+# Step-by-step instructions
+
+### 1. Clone the model repository
+```
+git clone git@github.com:JDACS4C-IMPROVE/DeepTTC.git
+cd DeepTTC
+git checkout v0.0.3-beta
 ```
 
 
+### 2. Additional dependencies
 
-## Run Step
+Run `python3 -m pip install -r requirements.txt`
+
+
+### 3. Run `setup_improve.sh`.
+```bash
+source setup_improve.sh
+```
+
+This will:
+1. Download cross-study analysis (CSA) benchmark data into `./csa_data/`.
+2. Clone IMPROVE repo (checkout tag `v0.0.3-beta`) outside the DeepTTC model repo
+3. Set up env variables: `IMPROVE_DATA_DIR` (to `./csa_data/`) and `PYTHONPATH` (adds IMPROVE repo).
+
+
+### 4. Preprocess CSA benchmark data (_raw data_) to construct model input data (_ML data_)
+```bash
+python deepttc_preprocess_improve.py
+```
+
+Preprocesses the CSA data and creates train, validation (val), and test datasets.
+
+Generates:
+* three model input data files: `train_data.pt`, `val_data.pt`, `test_data.pt`
+* three tabular data files, each containing the drug response values (i.e. AUC) and corresponding metadata: `train_y_data.csv`, `val_y_data.csv`, `test_y_data.csv`
 
 ```
-step1
-# Get the Drug SMILES information in the NCBI pubchem database based on the pubchem id from GDSC provided.
-python Step1_PubchemID2smile.py GDSC_data/Drug_listTue_Aug10_2021.csv 
+ml_data
+└── GDSCv1-CCLE
+    └── split_0
+        ├── processed
+        │   ├── test_data.pt
+        │   ├── train_data.pt
+        │   └── val_data.pt
+        ├── test_y_data.csv
+        ├── train_y_data.csv
+        ├── val_y_data.csv
+        └── x_data_gene_expression_scaler.gz
+```
 
 
-step2 
-# This is a python Class script to get the cell line RNA-seq data base the "drug-id and cosmic_id".
-python Step1_getData.py
+### 5. Train DeepTTC model
+```bash
+python deepttc_train_improve.py
+```
+
+Trains DeepTTC using the model input data: `train_data.pt` (training), `val_data.pt` (for early stopping).
+
+Generates:
+* trained model: `model.pt`
+* predictions on val data (tabular data): `val_y_data_predicted.csv`
+* prediction performance scores on val data: `val_scores.json`
+```
+out_models
+└── GDSCv1
+    └── split_0
+        ├── best -> /lambda_stor/data/onarykov/git/DeepTTC/DeepTTC-develop/out_models/GDSCv1/split_0/epochs/002
+        ├── epochs
+        │   ├── 001
+        │   │   ├── ckpt-info.json
+        │   │   └── model.h5
+        │   └── 002
+        │       ├── ckpt-info.json
+        │       └── model.h5
+        ├── last -> /lambda_stor/data/onarykov/git/DeepTTC/DeepTTC-develop/out_models/GDSCv1/split_0/epochs/002
+        ├── model.pt
+        ├── out_models
+        │   └── GDSCv1
+        │       └── split_0
+        │           └── ckpt.log
+        ├── val_scores.json
+        └── val_y_data_predicted.csv
+```
 
 
-step3 
-# The DeepTTC model script, includ Data split and model train/test.
-python Step3_model.py
+### 6. Run inference on test data with the trained model
+```python deepttc_infer_improve.py```
 
+Evaluates the performance on a test dataset with the trained model.
+
+Generates:
+* predictions on test data (tabular data): `test_y_data_predicted.csv`
+* prediction performance scores on test data: `test_scores.json`
+```
+out_infer
+└── GDSCv1-CCLE
+    └── split_0
+        ├── test_scores.json
+        └── test_y_data_predicted.csv
 ```
