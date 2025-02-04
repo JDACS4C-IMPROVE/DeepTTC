@@ -64,8 +64,6 @@ def run(params:Dict):
     # --------------------------------------------------------------------
     train_data_fname = frm.build_ml_data_file_name(data_format=params["data_format"], stage="train")  # [Req]
     val_data_fname = frm.build_ml_data_file_name(data_format=params["data_format"], stage="val")  # [Req]
-    print(train_data_fname)
-    print(val_data_fname)
     
     modelpath = frm.build_model_path(model_file_name=params["model_file_name"],
                                      model_file_format=params["model_file_format"],
