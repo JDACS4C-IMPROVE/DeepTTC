@@ -1,69 +1,28 @@
-#!/usr/bin/env python
+import sys
+from pathlib import Path
+from typing import Dict
+
+# [MODEL] Model-specific imports, as needed
 import subprocess
 import joblib
 import pandas as pd
 import numpy as np
-from typing import Dict
-from pathlib import Path
 # import pickle
-
 import os
-import sys
 from Step2_DataEncoding import DataEncoding
 from sklearn.preprocessing import StandardScaler, MaxAbsScaler, MinMaxScaler, RobustScaler
 
-# [Req] IMPROVE/CANDLE imports
-# import candle
-# from improve import framework as frm
-# from improve import drug_resp_pred as drp
-
+# [Req] Core improvelib imports
 from improvelib.applications.drug_response_prediction.config import DRPPreprocessConfig
 from improvelib.utils import str2bool
 import improvelib.utils as frm
-import improvelib.applications.drug_response_prediction.drug_utils as drugs
-import improvelib.applications.drug_response_prediction.omics_utils as omics
+# [Req] Application-specific (DRP) imports
+import improvelib.applications.drug_response_prediction.drug_utils as drugs_utils
+import improvelib.applications.drug_response_prediction.omics_utils as omics_utils
 import improvelib.applications.drug_response_prediction.drp_utils as drp
-
+from model_params_def import preprocess_params
 
 filepath = Path(__file__).resolve().parent  # [Req]
-IMPROVE_DATA_DIR = Path(os.environ["IMPROVE_DATA_DIR"])
-
-
-# 2. Model-specific params (Model: LightGBM)
-# All params in model_preproc_params are optional.
-# If no params are required by the model, then it should be an empty list.
-model_preproc_params = [
-    {"name": "use_lincs",
-     "type": frm.str2bool,
-     "default": True,
-     "help": "Flag to indicate if landmark genes are used for gene selection.",
-     },
-    {"name": "scaling",
-     "type": str,
-     "default": "std",
-     "choice": ["std", "minmax", "miabs", "robust"],
-     "help": "Scaler for gene expression and Mordred descriptors data.",
-     },
-    {"name": "ge_scaler_fname",
-     "type": str,
-     "default": "x_data_gene_expression_scaler.gz",
-     "help": "File name to save the gene expression scaler object.",
-     },
-    {"name": "default_data_url",
-     "type": str,
-     "default": "'https://ftp.mcs.anl.gov/pub/candle/public/improve/reproducability/DeepTTC/'",
-     "help": "Link to model-specific data",
-     },
-    {"name": "sample_col_name",
-     "type": str,
-     "default": "COSMIC_ID",
-     "help": "ID format of the samples",
-     },
-]
-
-# [Req]
-preprocess_params = model_preproc_params
-
 
 def preprocess(args, rna_data, drug_data, response_data, response_metric='AUC'):
     args["vocab_dir"] = '.'  # os.path.join(IMPROVE_DATA_DIR, 'DeepTTC')
@@ -118,18 +77,16 @@ def build_common_data(params: Dict):
 
     :return: drug and cell dataframes and smiles graphs
     :rtype: pd.DataFrame
-    """
-    # ------------------------------------------------------
-    # [Req] Build paths and create output dir
-    # ------------------------------------------------------
-    # Build paths for raw_data, x_data, y_data, splits
-    params = frm.build_paths(params)
+    """    
+    # --------------------------------------------------------------------
+    # [Req] Create dataloaders
+    # --------------------------------------------------------------------
+    omics_loader = omics_utils.OmicsLoader(params)
+    drugs_loader = drugs_utils.DrugsLoader(params)
 
     # ------------------------------------------------------
     # [Req] Load X data (feature representations)
     # ------------------------------------------------------
-    omics_loader = omics.OmicsLoader(params)
-    drugs_loader = drugs.DrugsLoader(params)
 
     gene_expression = omics_loader.dfs['cancer_gene_expression.tsv']
     df_drug = drugs_loader.dfs['drug_SMILES.tsv']
@@ -137,10 +94,9 @@ def build_common_data(params: Dict):
     df_drug.columns = [params["drug_col_name"], "smiles"]
     params['drug_id'] = params["drug_col_name"]
     df_drug["SMILES"] = df_drug["smiles"]
-    # breakpoint()
 
     # ------------------------------------------------------
-    # Further preprocess X data
+    # [MODEL] Preprocess X data
     # ------------------------------------------------------
     # Gene selection (based on LINCS landmark genes)
     def gene_selection(df, genes_fpath, canc_col_name):
@@ -346,21 +302,24 @@ def build_stage_dependent_data(params: Dict,
     :params: pd.Dataframe df_cell_all: Pandas dataframe with cell features.
     :params: scikit scaler: Scikit object for scaling data.
     """
-    args = params  # candle.ArgumentStruct(**params)
+    #args = params  # candle.ArgumentStruct(**params)
     stages = {"train": params["train_split_file"],
               "val": params["val_split_file"],
               "test": params["test_split_file"]}
-    # --------------------------------
-    # [Req] Load response data
-    # --------------------------------
-    print(stages["test"])
+    # --------------------------------------------------------------------
+    # [Req] Create dataloaders and get response data - DRP specific
+    # --------------------------------------------------------------------
+    #print(stages["test"])
     for key in params:
         if type(params[key]) == str:
             params[key] = params[key].strip('"')
     df_response = drp.DrugResponseLoader(params,
                                          split_file=stages[stage],
                                          verbose=False).dfs["response.tsv"]
-
+    
+    # --------------------------------------------------------------------
+    # [MODEL] Preprocess X data
+    # --------------------------------------------------------------------
     # Retain (canc, drug) response samples for which omic data is available
     df_y, df_cell = get_common_samples(df1=df_response,
                                        df2=df_cell_all,
@@ -386,13 +345,16 @@ def build_stage_dependent_data(params: Dict,
     df_y = df_y[[params["drug_col_name"],
                  params["canc_col_name"], params["y_col_name"]]]
     # Combine data
-    data, gene_expression_columns, drug_columns = prepare_dataframe(args,
+    data, gene_expression_columns, drug_columns = prepare_dataframe(params,
                                                                     df_cell, df_drug, df_y)
     # xd, xc, y = compose_data_arrays(
     #    df_y, df_drug, df_cell, params["drug_col_name"], params["canc_col_name"])
     # Save the processed (all) data as PyTorch dataset
     # xd['Label'] = y
 
+    # --------------------------------------------------------------------
+    # [MODEL] Save X data
+    # --------------------------------------------------------------------
     # Save the subset of y data
     # fname = f"{stage}_{params['y_data_suffix']}.csv"
     df_gene_expression = data[gene_expression_columns]
@@ -405,6 +367,9 @@ def build_stage_dependent_data(params: Dict,
         df_output[key].to_hdf(out_path, key)
     # pickle.dump(df_output, open(out_path, 'wb'), protocol=4)
 
+    # --------------------------------------------------------------------
+    # [Req] Save response data (Y data)
+    # --------------------------------------------------------------------
     data[params['y_col_name']] = data['Label']
     y_df = pd.DataFrame(
         data[['Label', params['y_col_name'], params['canc_col_name'], params['drug_col_name']]])
@@ -413,7 +378,15 @@ def build_stage_dependent_data(params: Dict,
     return scaler
 
 
-def run(params):
+def run(params:Dict):
+    """ Run data preprocessing.
+
+    Args:
+        params (dict): dict of IMPROVE parameters and parsed values.
+
+    Returns:
+        str: directory name that was used to save the ML data files.
+    """
 
     df_drug, df_cell_all = build_common_data(params)
     stages = ["train", "val", "test"]
@@ -427,22 +400,17 @@ def run(params):
                                             scaler,
                                             )
 
-    return
+    return params["output_dir"]
 
 
 def main(args):
     # [Req]
-    additional_definitions = preprocess_params
     cfg = DRPPreprocessConfig()
     params = cfg.initialize_parameters(
         filepath,
         default_config="deepttc_params.txt",
-        additional_cli_section=None,
-        additional_definitions=additional_definitions,
-        required=None,
-    )
+        additional_definitions=preprocess_params)
 
-    print("\nFinished data preprocessing.")
     download_model_data(params)
     # download_dataset(params)
 

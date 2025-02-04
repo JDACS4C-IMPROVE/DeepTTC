@@ -1,3 +1,5 @@
+from improvelib.utils import str2bool
+
 preprocess_params = [
     {"name": "use_lincs",
      "type": bool,
@@ -183,6 +185,12 @@ train_params = [
         "type": int,
         "default": None,
         "help": "Dimensions of the input gene expression data",
+    },
+    {
+        "name": "cuda_name",
+        "type": str,
+        "default": "cuda:0",
+        "help": "Specify the CUDA device to use for model training and inference.",
     },
 ]
 

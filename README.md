@@ -10,7 +10,7 @@ A more detailed tutorial can be found [here](https://jdacs4c-improve.github.io/d
 ## Dependencies
 Installation instuctions are detialed below in [Step-by-step instructions](#step-by-step-instructions).
 
-Conda `yml` file `environment_no_candle.yml`
+Conda `yml` file `environment.yml`
 
 ML framework:
 + [Torch](https://pytorch.org/) -- deep learning framework for building the prediction model
@@ -76,11 +76,13 @@ cd DeepTTC
 git checkout v0.0.3-beta
 ```
 
+### 2. Set computational environment
 
-### 2. Additional dependencies
-
-Run `python3 -m pip install -r requirements.txt`
-
+Create conda env using `yml`
+```
+conda env create -f environment.yml -n deepttc
+conda activate deepttc
+```
 
 ### 3. Run `setup_improve.sh`.
 ```bash
@@ -95,7 +97,7 @@ This will:
 
 ### 4. Preprocess CSA benchmark data (_raw data_) to construct model input data (_ML data_)
 ```bash
-python deepttc_preprocess_improve.py
+python deepttc_preprocess_improve.py --input_dir ./csa_data/raw_data --output_dir exp_result
 ```
 
 Preprocesses the CSA data and creates train, validation (val), and test datasets.
@@ -121,7 +123,7 @@ ml_data
 
 ### 5. Train DeepTTC model
 ```bash
-python deepttc_train_improve.py
+python deepttc_train_improve.py --input_dir exp_result --output_dir exp_result
 ```
 
 Trains DeepTTC using the model input data: `train_data.pt` (training), `val_data.pt` (for early stopping).
@@ -154,7 +156,7 @@ out_models
 
 
 ### 6. Run inference on test data with the trained model
-```python deepttc_infer_improve.py```
+```python deepttc_infer_improve.py --input_data_dir exp_result --input_model_dir exp_result --output_dir exp_result --calc_infer_score true```
 
 Evaluates the performance on a test dataset with the trained model.
 

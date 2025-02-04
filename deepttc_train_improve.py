@@ -1,29 +1,22 @@
+import sys
+from pathlib import Path
+from typing import Dict
+
+# Model-specific imports
 import os
 import json
 # import pickle
 import pandas as pd
-from pathlib import Path
 from DeepTTC_candle import get_model
+
+# [Req] IMPROVE imports
 from improvelib.applications.drug_response_prediction.config import DRPTrainConfig
 from improvelib.utils import str2bool
 import improvelib.utils as frm
 from improvelib.metrics import compute_metrics
-from model_params_def import preprocess_params, train_params
+from model_params_def import train_params
 
-# 1. App-specific params (App: monotherapy drug response prediction)
-# Currently, there are no app-specific params for this script.
-app_train_params = []
-
-# 2. Model-specific params (Model: GraphDRP)
-# All params in model_train_params are optional.
-# If no params are required by the model, then it should be an empty list.
-
-# Combine the two lists (the combined parameter list will be passed to
-# frm.initialize_parameters() in the main().
-train_params = app_train_params + train_params
-
-metrics_list = ["mse", "rmse", "pcc", "scc", "r2"]
-
+filepath = Path(__file__).resolve().parent # [Req]
 
 def compute_performace_scores(y_true, y_pred, metrics, outdtd, stage):
     """Evaluate predictions according to specified metrics.
@@ -56,66 +49,63 @@ def compute_performace_scores(y_true, y_pred, metrics, outdtd, stage):
     return scores
 
 
-def run(params):
-    """ Execute specified model training.
+def run(params:Dict):
+    """ Run model training.
 
-    :params: Dict params: A dictionary of CANDLE/IMPROVE keywords and parsed values.
+    Args:
+        params (dict): dict of IMPROVE parameters and parsed values.
 
-    :return: List of floats evaluating model predictions according to
-             specified metrics.
-    :rtype: float list
+    Returns:
+        dict: prediction performance scores computed on validation data
+            according to the metrics_list.
     """
-    data_dir = Path(params["input_dir"])
-    train_data_path = data_dir / \
-        frm.build_ml_data_file_name(params['data_format'], stage="val")
-    val_data_path = data_dir / \
-        frm.build_ml_data_file_name(params['data_format'], stage="val")
-    # test_data_path = model_dir/'test.h5'
-
-    train_data = {}
-    train_data['drug'] = pd.read_hdf(train_data_path, key='drug')
-    train_data['gene_expression'] = pd.read_hdf(
-        train_data_path, key='gene_expression')
-    val_data = {}
-    val_data['drug'] = pd.read_hdf(val_data_path, key='drug')
-    val_data['gene_expression'] = pd.read_hdf(
-        val_data_path, key='gene_expression')
-    # test_data = pickle.load(open(test_data_path, 'rb'))
-    modeldir = params['output_dir']
+    # --------------------------------------------------------------------
+    # [Req] Create data names for train/val sets and build model path
+    # --------------------------------------------------------------------
+    train_data_fname = frm.build_ml_data_file_name(data_format=params["data_format"], stage="train")  # [Req]
+    val_data_fname = frm.build_ml_data_file_name(data_format=params["data_format"], stage="val")  # [Req]
+    print(train_data_fname)
+    print(val_data_fname)
+    
     modelpath = frm.build_model_path(model_file_name=params["model_file_name"],
                                      model_file_format=params["model_file_format"],
                                      model_dir=params["output_dir"])
+    
+    # --------------------------------------------------------------------
+    # Load model input data (ML data) for train and val
+    # --------------------------------------------------------------------
+    train_data = {}
+    train_data['drug'] = pd.read_hdf(os.path.join(params["input_dir"],train_data_fname), key='drug')
+    train_data['gene_expression'] = pd.read_hdf(os.path.join(params["input_dir"],train_data_fname), key='gene_expression')
+    val_data = {}
+    val_data['drug'] = pd.read_hdf(os.path.join(params["input_dir"],val_data_fname), key='drug')
+    val_data['gene_expression'] = pd.read_hdf(os.path.join(params["input_dir"],val_data_fname), key='gene_expression')
 
-    if not os.path.exists(modeldir):
-        os.mkdir(modeldir)
+    # --------------------------------------------------------------------
+    # CUDA/CPU device, as needed
+    # --------------------------------------------------------------------
+    
+    # --------------------------------------------------------------------
+    # Prepare model
+    # --------------------------------------------------------------------
     model = get_model(params)
+    
+    # --------------------------------------------------------------------
+    # Train. Iterate over epochs.
+    # --------------------------------------------------------------------
     model = model.train(train_drug=train_data['drug'], train_rna=train_data['gene_expression'],
                         val_drug=val_data['drug'], val_rna=val_data['gene_expression'])
     print(f'Saving model to {modelpath}')
-
-    ############### HACK!!!! ################
-    # os.makedirs(str(modelpath).split('.')[0], exist_ok=True)
-    #########################################
     model.save_model(modelpath)
-    # model.save_model(modelfile)
     print("Model Saved :{}".format(modelpath))
-
+    
+    # --------------------------------------------------------------------
+    # Load best model and compute predictions
+    # --------------------------------------------------------------------
+    model.load_pretrained(modelpath)
     y_label, y_pred, mse, rmse, person, p_val, spearman, s_p_val, CI = model.predict(
         val_data['drug'], val_data['gene_expression'])
 
-    # Store predictions in data frame
-    # Attempt to concat predictions with the cancer and drug ids, and the true values
-    # If data frame found, then y_true is read from data frame and returned
-    # Otherwise, only a partial data frame is stored (with val_true and val_pred)
-    # and y_true is equal to pytorch loaded val_true
-    # This includes true and predicted values
-    # pred_col_name = params["y_col_name"] + params["pred_col_name_suffix"]
-    # true_col_name = params["y_col_name"] + "_true"
-    # df = pd.DataFrame({true_col_name: y_label, pred_col_name: y_pred})
-
-    # Save preds df
-    opath = Path(params["output_dir"])
-    os.makedirs(opath, exist_ok=True)
     # ------------------------------------------------------
     # [Req] Save raw predictions in dataframe
     # ------------------------------------------------------
@@ -124,7 +114,8 @@ def run(params):
         y_pred=y_pred,
         stage="val",
         y_col_name=params["y_col_name"],
-        output_dir=params["output_dir"]
+        output_dir=params["output_dir"],
+        input_dir=params["input_dir"]
     )
 
     # ------------------------------------------------------
@@ -141,19 +132,18 @@ def run(params):
     return val_scores
 
 
-def main():
+def main(args):
     filepath = Path(__file__).resolve().parent
 
-    additional_definitions = preprocess_params + \
-        train_params
     cfg = DRPTrainConfig()
     params = cfg.initialize_parameters(pathToModelDir=filepath,
                                        default_config="deepttc_params.txt",
-                                       additional_definitions=additional_definitions
+                                       additional_definitions=train_params
                                        )
-    run(params)
-    print("\nFinished training DeepTTC model.")
+    val_scores = run(params)
+    print("\nFinished training model.")
 
 
+# [Req]
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])
