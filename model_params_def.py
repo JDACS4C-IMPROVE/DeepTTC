@@ -194,4 +194,77 @@ train_params = [
     },
 ]
 
-test_params = []
+infer_params = [
+    {
+        "name": "cuda_name",
+        "type": str,
+        "default": "cuda:0",
+        "help": "Specify the CUDA device to use for model training and inference.",
+    },  
+    {
+        "name": "input_dim_drug",
+        "type": int,
+        "default": None,
+        "help": "Input size of the drug transformer",
+    },
+    {
+        "name": "transformer_emb_size_drug",
+        "type": int,
+        "default": None,
+        "help": "Size of the drug embeddings",
+    },
+    {
+        "name": "transformer_n_layer_drug",
+        "type": int,
+        "default": None,
+        "help": "Number of layers for drug transformer",
+    },
+    {
+        "name": "transformer_intermediate_size_drug",
+        "type": int,
+        "default": None,
+        "help": "Intermediate size of the drug layers",
+    },
+    {
+        "name": "transformer_attention_probs_dropout",
+        "type": float,
+        "default": None,
+        "help": "number of layers for drug transformer",
+    },
+    {
+        "name": "transformer_hidden_dropout_rate",
+        "type": float,
+        "default": None,
+        "help": "dropout rate for transformer hidden layers",
+    },
+        {
+        "name": "dropout",
+        "type": float,
+        "default": None,
+        "help": "dropout rate for common part",
+    },
+    {
+        "name": "transformer_num_attention_heads_drug",
+        "type": int,
+        "default": None,
+        "help": "number of attention heads for drug transformer",
+    },
+    {
+        "name": "gene_dim",
+        "type": int,
+        "default": None,
+        "help": "Dimensions of the input gene expression data",
+    },
+    {
+        "name": "input_dim_drug_classifier",
+        "type": int,
+        "default": None,
+        "help": "input dimensions for drug classifier",
+    },
+    {
+        "name": "input_dim_gene_classifier",
+        "type": int,
+        "default": None,
+        "help": "input dimensions for gene classifier",
+    },
+]
