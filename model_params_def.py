@@ -27,6 +27,11 @@ preprocess_params = [
      "default": "COSMIC_ID",
      "help": "ID format of the samples",
      },
+    {"name": "vocab_dir",
+     "type": str,
+     "default": "author_data",
+     "help": "Directory containing ESPF vocab files",
+     },
 ]
 
 train_params = [
