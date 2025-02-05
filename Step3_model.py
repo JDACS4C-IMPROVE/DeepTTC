@@ -148,7 +148,7 @@ class Classifier(nn.Sequential):
 
 
 class DeepTTC:
-    def __init__(self, modeldir, args):
+    def __init__(self, modeldir, args, gene_dim):
         devices_list = os.getenv('CUDA_AVAILABLE_DEVICES')
         # device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         # If `CUDA_AVAILABLE_DEVICES` is not set or empty, use `args["cuda_name"]` if available
@@ -174,7 +174,9 @@ class DeepTTC:
             self.modeldir, "valid_markdowntable.txt")
         self.pkl_file = os.path.join(self.modeldir, "loss_curve_iter.pkl")
         self.args = args
-        model_gene = MLP(input_dim=self.args['gene_dim'], device=self.device)
+        self.gene_dim = gene_dim
+        #model_gene = MLP(input_dim=self.args['gene_dim'], device=self.device)
+        model_gene = MLP(input_dim=self.gene_dim, device=self.device)
         self.model = Classifier(self.args, self.model_drug, model_gene)
         # self.model = None
 
@@ -255,7 +257,7 @@ class DeepTTC:
             print("restarting from ckpt: initial_epoch: %i" % initial_epoch)
         #"""
 
-        max_iterations_without_improvement = 10
+        max_iterations_without_improvement = self.args["patience"]
         early_stop_counter = 0
         train_loss = None
         for epo in np.arange(initial_epoch, train_epoch):
