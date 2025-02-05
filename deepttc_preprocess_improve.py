@@ -25,7 +25,7 @@ from model_params_def import preprocess_params
 filepath = Path(__file__).resolve().parent  # [Req]
 
 def preprocess(args, rna_data, drug_data, response_data, response_metric='AUC'):
-    args["vocab_dir"] = '.'  # os.path.join(IMPROVE_DATA_DIR, 'DeepTTC')
+    #args["vocab_dir"] = '.'  # os.path.join(IMPROVE_DATA_DIR, 'DeepTTC')
     obj = DataEncoding(args, args["vocab_dir"], args["canc_col_name"],
                        args["sample_col_name"], args["y_col_name"], args["drug_col_name"])
     drug_smiles = drug_data
@@ -411,7 +411,7 @@ def main(args):
         default_config="deepttc_params.txt",
         additional_definitions=preprocess_params)
 
-    download_model_data(params)
+    #download_model_data(params)
     # download_dataset(params)
 
     ml_data_outdir = run(params)
