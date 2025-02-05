@@ -82,8 +82,9 @@ def run(params:Dict):
     # --------------------------------------------------------------------
     # Load best model and compute predictions
     # --------------------------------------------------------------------
-
-    model = DeepTTC(modeldir=modelpath, args=params)
+    input_gene_dim = test_data['gene_expression'].shape[1]
+    print(f'Number of genes of input gene expression data: {input_gene_dim}')
+    model = DeepTTC(modeldir=modelpath, args=params, gene_dim=input_gene_dim)
     model.load_pretrained(modelpath)
     # Compute predictions
     y_label, y_pred, mse, rmse, person, p_val, spearman, s_p_val, CI = model.predict(

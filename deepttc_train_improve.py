@@ -7,7 +7,7 @@ import os
 import json
 # import pickle
 import pandas as pd
-from DeepTTC_candle import get_model
+from Step3_model import *
 
 # [Req] IMPROVE imports
 from improvelib.applications.drug_response_prediction.config import DRPTrainConfig
@@ -18,36 +18,9 @@ from model_params_def import train_params
 
 filepath = Path(__file__).resolve().parent # [Req]
 
-def compute_performace_scores(y_true, y_pred, metrics, outdtd, stage):
-    """Evaluate predictions according to specified metrics.
-
-    Metrics are evaluated. Scores are stored in specified path and returned.
-
-    :params array y_true: Array with ground truth values.
-    :params array y_pred: Array with model predictions.
-    :params listr metrics: List of strings with metrics to evaluate.
-    :params Dict outdtd: Dictionary with path to store scores.
-    :params str stage: String specified if evaluation is with respect to
-            validation or testing set.
-
-    :return: Python dictionary with metrics evaluated and corresponding scores.
-    :rtype: dict
-    """
-    scores = compute_metrics(y_true, y_pred, metrics)
-    key = f"{stage}_loss"
-    scores[key] = scores["mse"]
-
-    with open(outdtd["scores"], "w", encoding="utf-8") as f:
-        json.dump(scores, f, ensure_ascii=False, indent=4)
-
-    # Performance scores for Supervisor HPO
-    if stage == "val":
-        print("\nIMPROVE_RESULT val_loss:\t{}\n".format(scores["mse"]))
-        print("Validation scores:\n\t{}".format(scores))
-    elif stage == "test":
-        print("Inference scores:\n\t{}".format(scores))
-    return scores
-
+def get_model(args, gene_dim):
+    net = DeepTTC(modeldir=args['output_dir'], args=args, gene_dim=958)
+    return net
 
 def run(params:Dict):
     """ Run model training.
@@ -86,7 +59,10 @@ def run(params:Dict):
     # --------------------------------------------------------------------
     # Prepare model
     # --------------------------------------------------------------------
-    model = get_model(params)
+    # Get gene gene dimensions from input data
+    input_gene_dim = train_data['gene_expression'].shape[1]
+    print(f'Number of genes of input gene expression data: {input_gene_dim}')
+    model = get_model(params, gene_dim=input_gene_dim)
     
     # --------------------------------------------------------------------
     # Train. Iterate over epochs.
