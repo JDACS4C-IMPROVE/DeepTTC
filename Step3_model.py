@@ -151,8 +151,12 @@ class DeepTTC:
     def __init__(self, modeldir, args):
         devices_list = os.getenv('CUDA_AVAILABLE_DEVICES')
         # device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-        if devices_list is None:
-            devices_list = '0'
+        # If `CUDA_AVAILABLE_DEVICES` is not set or empty, use `args["cuda_name"]` if available
+        if not devices_list:
+            if args["cuda_name"] != "cuda:0":  # Corrected string comparison
+                devices_list = args["cuda_name"].split(":")[-1]  # Extract number from "cuda:N"
+            else:
+                devices_list = '0'  # Default to GPU 0 if nothing is specified
         self.device = torch.device(
             f'cuda:{devices_list}' if torch.cuda.is_available() else 'cpu')
 

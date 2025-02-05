@@ -10,7 +10,7 @@ A more detailed tutorial can be found [here](https://jdacs4c-improve.github.io/d
 ## Dependencies
 Installation instuctions are detialed below in [Step-by-step instructions](#step-by-step-instructions).
 
-Conda `yml` file `environment_no_candle.yml`
+Conda `yml` file `environment.yml`
 
 ML framework:
 + [Torch](https://pytorch.org/) -- deep learning framework for building the prediction model
@@ -63,7 +63,8 @@ Note that `./_original_data` contains data files that were used to train and eva
 + `deepttc_preprocess_improve.py` - takes benchmark data files and transforms into files for trianing and inference
 + `deepttc_train_improve.py` - trains the DeepTTC model
 + `deepttc_infer_improve.py` - runs inference with the trained DeepTTC model
-+ `DeepTTC.default` - default parameter file
++ `model_params_def.py` - definitions of parameters that are specific to the model
++ `deepttc_params.txt` - default parameter file
 
 
 
@@ -76,11 +77,13 @@ cd DeepTTC
 git checkout v0.0.3-beta
 ```
 
+### 2. Set computational environment
 
-### 2. Additional dependencies
-
-Run `python3 -m pip install -r requirements.txt`
-
+Create conda env using `yml`
+```
+conda env create -f environment.yml -n deepttc
+conda activate deepttc
+```
 
 ### 3. Run `setup_improve.sh`.
 ```bash
@@ -95,33 +98,32 @@ This will:
 
 ### 4. Preprocess CSA benchmark data (_raw data_) to construct model input data (_ML data_)
 ```bash
-python deepttc_preprocess_improve.py
+python deepttc_preprocess_improve.py --input_dir ./csa_data/raw_data --output_dir exp_result
 ```
 
 Preprocesses the CSA data and creates train, validation (val), and test datasets.
 
 Generates:
-* three model input data files: `train_data.pt`, `val_data.pt`, `test_data.pt`
+* three model input data files: `train_data.h5`, `val_data.h5`, `test_data.h5`
 * three tabular data files, each containing the drug response values (i.e. AUC) and corresponding metadata: `train_y_data.csv`, `val_y_data.csv`, `test_y_data.csv`
 
 ```
 ml_data
 └── GDSCv1-CCLE
     └── split_0
-        ├── processed
-        │   ├── test_data.pt
-        │   ├── train_data.pt
-        │   └── val_data.pt
+        ├── cell_xdata_scaler.gz
+        ├── test_data.h5
         ├── test_y_data.csv
+        ├── train_data.h5
         ├── train_y_data.csv
-        ├── val_y_data.csv
-        └── x_data_gene_expression_scaler.gz
+        ├── val_data.h5
+        └── val_y_data.csv
 ```
 
 
 ### 5. Train DeepTTC model
 ```bash
-python deepttc_train_improve.py
+python deepttc_train_improve.py --input_dir exp_result --output_dir exp_result
 ```
 
 Trains DeepTTC using the model input data: `train_data.pt` (training), `val_data.pt` (for early stopping).
@@ -134,27 +136,16 @@ Generates:
 out_models
 └── GDSCv1
     └── split_0
-        ├── best -> /lambda_stor/data/onarykov/git/DeepTTC/DeepTTC-develop/out_models/GDSCv1/split_0/epochs/002
-        ├── epochs
-        │   ├── 001
-        │   │   ├── ckpt-info.json
-        │   │   └── model.h5
-        │   └── 002
-        │       ├── ckpt-info.json
-        │       └── model.h5
-        ├── last -> /lambda_stor/data/onarykov/git/DeepTTC/DeepTTC-develop/out_models/GDSCv1/split_0/epochs/002
         ├── model.pt
-        ├── out_models
-        │   └── GDSCv1
-        │       └── split_0
-        │           └── ckpt.log
         ├── val_scores.json
         └── val_y_data_predicted.csv
 ```
 
 
 ### 6. Run inference on test data with the trained model
-```python deepttc_infer_improve.py```
+```bash
+python deepttc_infer_improve.py --input_data_dir exp_result --input_model_dir exp_result --output_dir exp_result --calc_infer_score true
+```
 
 Evaluates the performance on a test dataset with the trained model.
 

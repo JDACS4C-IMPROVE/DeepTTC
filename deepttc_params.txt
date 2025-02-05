@@ -22,8 +22,6 @@ scaling = std
 output_dir = ./ml_data
 
 [Train]
-input_dir = ./ml_data
-output_dir = ./ml_data
 data_format = .h5
 model_file_name = model
 model_file_format = .pt
