@@ -24,6 +24,28 @@ from model_params_def import preprocess_params
 
 filepath = Path(__file__).resolve().parent  # [Req]
 
+def process_gene_expression(data, gene_expression_columns, dtype=None):
+    """
+    Extracts gene expression data and allows reducing memory usage with a lower precision float type.
+
+    Args:
+        data (pd.DataFrame): The full dataset.
+        gene_expression_columns (list): List of gene expression column names.
+        dtype (str, optional): Floating point type ('float32' or 'float16'). Defaults to None (keeps original dtype).
+
+    Returns:
+        pd.DataFrame: Processed gene expression data with the selected float type.
+    """
+    df_gene_expression = data[gene_expression_columns]
+    
+    # Convert dtype if provided
+    if dtype is not None:
+        if dtype not in ["float32", "float16"]:
+            raise ValueError("dtype must be 'float32' or 'float16'")
+        df_gene_expression = df_gene_expression.astype(dtype)
+
+    return df_gene_expression
+
 def preprocess(args, rna_data, drug_data, response_data, response_metric='AUC'):
     #args["vocab_dir"] = '.'  # os.path.join(IMPROVE_DATA_DIR, 'DeepTTC')
     obj = DataEncoding(args, args["input_supp_data_dir"], args["canc_col_name"],
@@ -357,7 +379,8 @@ def build_stage_dependent_data(params: Dict,
     # --------------------------------------------------------------------
     # Save the subset of y data
     # fname = f"{stage}_{params['y_data_suffix']}.csv"
-    df_gene_expression = data[gene_expression_columns]
+    #df_gene_expression = data[gene_expression_columns]
+    df_gene_expression = process_gene_expression(data, gene_expression_columns, params["gene_dtype"])
     df_drug = data[drug_columns]
     out_path = os.path.join(params["output_dir"], frm.build_ml_data_file_name(
         params["data_format"], stage=stage))  # f'{stage}_data.h5')

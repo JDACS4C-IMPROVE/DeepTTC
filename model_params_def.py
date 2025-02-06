@@ -27,6 +27,12 @@ preprocess_params = [
      "default": "COSMIC_ID",
      "help": "ID format of the samples",
      },
+    {
+    "name": "gene_dtype",
+    "type": str,
+    "default": None,
+    "help": "Specify the floating point precision for gene expression data (float32, float16, or None for default float64).",
+    },
 ]
 
 train_params = [
