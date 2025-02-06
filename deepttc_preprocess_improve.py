@@ -26,7 +26,7 @@ filepath = Path(__file__).resolve().parent  # [Req]
 
 def preprocess(args, rna_data, drug_data, response_data, response_metric='AUC'):
     #args["vocab_dir"] = '.'  # os.path.join(IMPROVE_DATA_DIR, 'DeepTTC')
-    obj = DataEncoding(args, args["vocab_dir"], args["canc_col_name"],
+    obj = DataEncoding(args, args["input_supp_data_dir"], args["canc_col_name"],
                        args["sample_col_name"], args["y_col_name"], args["drug_col_name"])
     drug_smiles = drug_data
 
