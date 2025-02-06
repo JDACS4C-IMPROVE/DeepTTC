@@ -18,8 +18,8 @@ from model_params_def import train_params
 
 filepath = Path(__file__).resolve().parent # [Req]
 
-def get_model(args, gene_dim):
-    net = DeepTTC(modeldir=args['output_dir'], args=args, gene_dim=958)
+def get_model(args, gene_dim=958):
+    net = DeepTTC(modeldir=args['output_dir'], args=args, gene_dim=gene_dim)
     return net
 
 def run(params:Dict):

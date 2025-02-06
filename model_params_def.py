@@ -27,11 +27,12 @@ preprocess_params = [
      "default": "COSMIC_ID",
      "help": "ID format of the samples",
      },
-    {"name": "vocab_dir",
-     "type": str,
-     "default": "author_data",
-     "help": "Directory containing ESPF vocab files",
-     },
+    {
+    "name": "gene_dtype",
+    "type": str,
+    "default": None,
+    "help": "Specify the floating point precision for gene expression data (float32, float16, or None for default float64).",
+    },
 ]
 
 train_params = [
@@ -186,12 +187,6 @@ train_params = [
         "help": "input dimensions for gene classifier",
     },
     {
-        "name": "gene_dim",
-        "type": int,
-        "default": None,
-        "help": "Dimensions of the input gene expression data",
-    },
-    {
         "name": "cuda_name",
         "type": str,
         "default": "cuda:0",
@@ -253,12 +248,6 @@ infer_params = [
         "type": int,
         "default": None,
         "help": "number of attention heads for drug transformer",
-    },
-    {
-        "name": "gene_dim",
-        "type": int,
-        "default": None,
-        "help": "Dimensions of the input gene expression data",
     },
     {
         "name": "input_dim_drug_classifier",

@@ -20,6 +20,7 @@ x_data_drug_files = [["drug_SMILES.tsv"]]
 use_lincs = True
 scaling = std
 output_dir = ./ml_data
+input_supp_data_dir = ./author_data
 
 [Train]
 data_format = .h5
@@ -44,7 +45,6 @@ transformer_num_attention_heads_drug = 8
 transformer_attention_probs_dropout = 0.1
 transformer_hidden_dropout_rate = 0.1
 learning_rate = 1e-5
-gene_dim = 958
 input_dim_drug_classifier = 128
 input_dim_gene_classifier = 256
 
@@ -64,6 +64,5 @@ transformer_num_attention_heads_drug = 8
 transformer_attention_probs_dropout = 0.1
 transformer_hidden_dropout_rate = 0.1
 learning_rate = 1e-5
-gene_dim = 958
 input_dim_drug_classifier = 128
 input_dim_gene_classifier = 256
