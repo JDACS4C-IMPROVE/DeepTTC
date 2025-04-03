@@ -12,10 +12,10 @@ MODEL_NAME=deepttc
 
 SPLIT=0
 
-# EPOCHS=2
+EPOCHS=2
 # EPOCHS=10
 # EPOCHS=25
-EPOCHS=50
+#EPOCHS=50
 # EPOCHS=500
 
 CUDA=1
@@ -33,7 +33,7 @@ MODEL_DIR=$gout/train/split_${SPLIT}
 INFER_DIR=$gout/infer/split_${SPLIT}
 
 # Preprocess
-echo CUDA_VISIBLE_DEVICES=${CUDA} \
+CUDA_VISIBLE_DEVICES=${CUDA} \
     python ${MODEL_NAME}_preprocess_improve.py \
     --train_split_file ${SPLIT}_train.txt \
     --val_split_file ${SPLIT}_val.txt \
@@ -42,14 +42,14 @@ echo CUDA_VISIBLE_DEVICES=${CUDA} \
     --output_dir $ML_DATA_DIR
 
 # Train
-echo CUDA_VISIBLE_DEVICES=${CUDA} \
+CUDA_VISIBLE_DEVICES=${CUDA} \
     python ${MODEL_NAME}_train_improve.py \
     --input_dir $ML_DATA_DIR \
     --output_dir $MODEL_DIR \
     --epochs $EPOCHS
 
 # Infer
-echo CUDA_VISIBLE_DEVICES=${CUDA} \
+CUDA_VISIBLE_DEVICES=${CUDA} \
     python ${MODEL_NAME}_infer_improve.py \
     --input_data_dir $ML_DATA_DIR\
     --input_model_dir $MODEL_DIR\
