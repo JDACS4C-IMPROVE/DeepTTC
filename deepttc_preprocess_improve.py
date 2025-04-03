@@ -338,7 +338,6 @@ def build_stage_dependent_data(params: Dict,
     df_response = drp.DrugResponseLoader(params,
                                          split_file=stages[stage],
                                          verbose=False).dfs["response.tsv"]
-    
     # --------------------------------------------------------------------
     # [MODEL] Preprocess X data
     # --------------------------------------------------------------------

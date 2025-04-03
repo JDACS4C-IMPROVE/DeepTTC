@@ -10,3 +10,6 @@ subword-nmt
 prettytable
 pubchempy
 rdkit
+lifelines
+wget
+tables

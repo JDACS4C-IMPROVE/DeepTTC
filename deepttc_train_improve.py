@@ -1,3 +1,8 @@
+import os
+if 'NUMEXPR_MAX_THREADS' in os.environ: os.environ.pop('NUMEXPR_MAX_THREADS')
+import numexpr
+print('NumExpr.nthreads = ' + str(numexpr.nthreads))
+
 import sys
 from pathlib import Path
 from typing import Dict

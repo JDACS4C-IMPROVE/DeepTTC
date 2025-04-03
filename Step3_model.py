@@ -27,13 +27,14 @@ from torch.autograd import Variable
 from torch import dropout, nn
 # from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import SequentialSampler
+import intel_extension_for_pytorch
 
 from prettytable import PrettyTable
 from subword_nmt.apply_bpe import BPE
 from model_helper import Encoder_MultipleLayers, Embeddings
 from Step2_DataEncoding import DataEncoding
 from sklearn.metrics import r2_score
-
+import intel_extension_for_pytorch as ipex
 
 class data_process_loader(data.Dataset):
     def __init__(self, list_IDs, labels, drug_df, rna_df):
@@ -157,8 +158,8 @@ class DeepTTC:
                 devices_list = args["cuda_name"].split(":")[-1]  # Extract number from "cuda:N"
             else:
                 devices_list = '0'  # Default to GPU 0 if nothing is specified
-        self.device = torch.device(
-            f'cuda:{devices_list}' if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device(f"xpu:{devices_list}") #torch.device(
+            #f'cuda:{devices_list}' if torch.cuda.is_available() else 'cpu')
 
         self.model_drug = transformer(args['input_dim_drug'],
                                       args['transformer_emb_size_drug'],
@@ -196,16 +197,30 @@ class DeepTTC:
             y_pred = y_pred + logits.flatten().tolist()
 
         model.train()
+        y_label = [x  if not np.isnan(x) else -1 for x in y_label]
+        mse = mean_squared_error(y_label, y_pred)
+        sqrt = np.sqrt(mse)
+        pearson_r = pearsonr(y_label, y_pred)[0]
+        pearson_r_pval = pearsonr(y_label, y_pred)[1]
+        spearman_r = spearmanr(y_label, y_pred)[0]
+        spearman_r_pval = spearmanr(y_label, y_pred)[1]
+        concordance = 0
+        r2 = 0
+        try:
+            concordance = concordance_index(y_label, y_pred)
+            r2 = r2_score(y_label, y_pred)
+        except:
+            pass
 
         return y_label, y_pred, \
-            mean_squared_error(y_label, y_pred), \
-            np.sqrt(mean_squared_error(y_label, y_pred)), \
-            pearsonr(y_label, y_pred)[0], \
-            pearsonr(y_label, y_pred)[1], \
-            spearmanr(y_label, y_pred)[0], \
-            spearmanr(y_label, y_pred)[1], \
-            concordance_index(y_label, y_pred), \
-            r2_score(y_label, y_pred), \
+            mse, \
+            sqrt, \
+            pearson_r,\
+            pearson_r_pval, \
+            spearman_r, \
+            spearman_r_pval, \
+            concordance, \
+            r2, \
             loss
 
     def train(self, train_drug, train_rna, val_drug, val_rna):
@@ -214,10 +229,13 @@ class DeepTTC:
         decay = 0
         BATCH_SIZE = self.args['batch_size']
         train_epoch = self.args['epochs']
-        self.model = self.model.to(self.device)
         # self.model = torch.nn.DataParallel(self.model, device_ids=[0, 5])
         opt = torch.optim.Adam(self.model.parameters(),
                                lr=lr, weight_decay=decay)
+        self.model.train()
+        self.model = self.model.to(self.device)
+        self.model, opt = ipex.optimize(self.model, optimizer=opt)
+
         loss_history = []
 
         params = {'batch_size': BATCH_SIZE,
@@ -272,6 +290,7 @@ class DeepTTC:
                     np.array(label))).float().to(self.device)
 
                 loss_fct = torch.nn.MSELoss()
+                loss_fct = loss_fct.to(self.device)
                 n = torch.squeeze(score, 1).float()
                 loss = loss_fct(n, label)
                 loss_history.append(loss.item())
@@ -370,7 +389,7 @@ class DeepTTC:
         if not os.path.exists(path):
             os.makedirs(path)
 
-        if self.device.type == 'cuda':
+        if self.device.type == 'cuda' or self.device.type == 'xpu':
             state_dict = torch.load(path)
         else:
             state_dict = torch.load(path, map_location=torch.device('cpu'))

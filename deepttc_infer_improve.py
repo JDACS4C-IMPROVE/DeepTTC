@@ -94,7 +94,7 @@ def run(params:Dict):
     # [Req] Save raw predictions in dataframe
     # ------------------------------------------------------
     frm.store_predictions_df(
-        y_true=y_label,
+        #y_true=y_label,
         y_pred=y_pred,
         stage="test",
         y_col_name=params["y_col_name"],
