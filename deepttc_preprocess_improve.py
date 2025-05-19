@@ -192,7 +192,7 @@ def run(params:Dict):
         smile_encode = pd.Series(df_drug_all['SMILES'].unique()).apply(obj._drug2emb_encoder)
         uniq_smile_dict = dict(zip(df_drug_all['SMILES'].unique(), smile_encode))
 
-        df_drug_stage['drug_encoding'] = [uniq_smile_dict[i] for i in df_drug_stage['smiles']]
+        df_drug_stage['drug_encoding'] = [uniq_smile_dict[i] for i in df_drug_stage['SMILES']]
         df_drug_stage = df_drug_stage.reset_index()
 
         #response_data.columns = [params["canc_col_name"], params["drug_col_name"], 'Label']
