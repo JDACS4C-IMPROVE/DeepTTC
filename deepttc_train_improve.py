@@ -85,8 +85,7 @@ def run(params:Dict):
     # Load best model and compute predictions
     # --------------------------------------------------------------------
     model.load_pretrained(modelpath)
-    y_label, y_pred, mse, rmse, person, p_val, spearman, s_p_val, CI = model.predict(
-        val_data['drug'], val_data['gene_expression'], val_data['label'])
+    y_label, y_pred, mse, rmse, person, p_val, spearman, s_p_val, CI = model.predict(val_data['drug'], val_data['gene_expression'], val_data['label'])
 
     # ------------------------------------------------------
     # [Req] Save raw predictions in dataframe
