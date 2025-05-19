@@ -201,9 +201,9 @@ def run(params:Dict):
         df_drug_stage.index = range(df_drug_stage.shape[0])
         df_cell.index = range(df_cell.shape[0])
 
-        drug_data = drug_data.drop(['index'], axis=1)
-        drug_columns = [x for x in drug_data.columns if x not in [params["canc_col_name"], params["drug_col_name"]]]
-        data = pd.merge(df_cell, drug_data, on=params["canc_col_name"], how='inner')
+        df_drug_stage = df_drug_stage.drop(['index'], axis=1)
+        drug_columns = [x for x in df_drug_stage.columns if x not in [params["canc_col_name"], params["drug_col_name"]]]
+        data = pd.merge(df_cell, df_drug_stage, on=params["canc_col_name"], how='inner')
         df_cell = df_cell.drop([params["canc_col_name"]], axis=1)
         gene_expression_columns = df_cell.columns
 
