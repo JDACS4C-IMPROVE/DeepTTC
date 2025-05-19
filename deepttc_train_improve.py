@@ -76,7 +76,7 @@ def run(params:Dict):
                         train_label=train_data['label'],
                         val_drug=val_data['drug'], 
                         val_rna=val_data['gene_expression'],
-                        val_lable=val_data['label'])
+                        val_label=val_data['label'])
     print(f'Saving model to {modelpath}')
     model.save_model(modelpath)
     print("Model Saved :{}".format(modelpath))
@@ -86,7 +86,7 @@ def run(params:Dict):
     # --------------------------------------------------------------------
     model.load_pretrained(modelpath)
     y_label, y_pred, mse, rmse, person, p_val, spearman, s_p_val, CI = model.predict(
-        val_data['drug'], val_data['gene_expression'])
+        val_data['drug'], val_data['gene_expression'], val_data['label'])
 
     # ------------------------------------------------------
     # [Req] Save raw predictions in dataframe

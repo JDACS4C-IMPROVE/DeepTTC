@@ -345,11 +345,11 @@ class DeepTTC:
         print('--- Training Finished ---')
         return self
 
-    def predict(self, drug_data, rna_data):
+    def predict(self, drug_data, rna_data, label_data):
         print('predicting...')
         self.model.to(self.device)
         info = data_process_loader(drug_data.index.values,
-                                   drug_data.Label.values,
+                                   label_data,
                                    drug_data, rna_data)
         params = {'batch_size': 16,
                   'shuffle': False,
