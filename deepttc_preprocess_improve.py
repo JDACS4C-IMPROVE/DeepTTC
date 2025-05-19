@@ -278,7 +278,7 @@ def run(params:Dict):
         str: directory name that was used to save the ML data files.
     """
 
-    df_drug, df_cell_all = build_common_data(params)
+    df_drug_all, df_cell_all = build_common_data(params)
     stages = {"train": params["train_split_file"],
             "val": params["val_split_file"],
             "test": params["test_split_file"]}
@@ -325,7 +325,7 @@ def run(params:Dict):
                     params["canc_col_name"], params["y_col_name"]]]
         # Combine data
         data, gene_expression_columns, drug_columns = prepare_dataframe(params,
-                                                                        df_cell, df_drug, df_y)
+                                                                        df_cell, df_drug_all, df_y)
 
         # --------------------------------------------------------------------
         # [MODEL] Save X data
