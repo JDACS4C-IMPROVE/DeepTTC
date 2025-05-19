@@ -182,6 +182,7 @@ def run(params:Dict):
         # Sub-select desired response column (y_col_name)
         # And reduce response dataframe to 3 columns: drug_id, cell_id and selected drug_response
         df_y = df_y[[params["drug_col_name"], params["canc_col_name"], params["y_col_name"]]]
+        df_y['Label'] = df_y[params['y_col_name']]
         # Combine data
 
         obj = DataEncoding(params, params["input_supp_data_dir"], params["canc_col_name"],
@@ -223,7 +224,6 @@ def run(params:Dict):
         # --------------------------------------------------------------------
         # [Req] Save response data (Y data)
         # --------------------------------------------------------------------
-        data[params['y_col_name']] = data['Label']
         y_df = pd.DataFrame(
             data[['Label', params['y_col_name'], params['canc_col_name'], params['drug_col_name']]])
         frm.save_stage_ydf(y_df, stage, params['output_dir'])
