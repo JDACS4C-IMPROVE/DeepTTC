@@ -187,7 +187,7 @@ def run(params:Dict):
         obj = DataEncoding(params, params["input_supp_data_dir"], params["canc_col_name"],
                             params["sample_col_name"], params["y_col_name"], params["drug_col_name"])
 
-        df_drug_stage = df_drug_all[[params['canc_col_name'], 'SMILES']]
+        df_drug_stage = df_drug_all[[params['drug_col_name'], 'SMILES']]
 
         smile_encode = pd.Series(df_drug_all['SMILES'].unique()).apply(obj._drug2emb_encoder)
         uniq_smile_dict = dict(zip(df_drug_all['SMILES'].unique(), smile_encode))
