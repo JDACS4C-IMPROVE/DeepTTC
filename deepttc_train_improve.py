@@ -48,14 +48,18 @@ def run(params:Dict):
     train_data = {}
     train_data['drug'] = pd.read_hdf(os.path.join(params["input_dir"],train_data_fname), key='drug')
     train_data['gene_expression'] = pd.read_hdf(os.path.join(params["input_dir"],train_data_fname), key='gene_expression')
+    train_data['label'] = pd.read_hdf(os.path.join(params["input_dir"],train_data_fname), key='label')
     val_data = {}
     val_data['drug'] = pd.read_hdf(os.path.join(params["input_dir"],val_data_fname), key='drug')
     val_data['gene_expression'] = pd.read_hdf(os.path.join(params["input_dir"],val_data_fname), key='gene_expression')
+    val_data['label'] = pd.read_hdf(os.path.join(params["input_dir"],val_data_fname), key='label')
 
     # --------------------------------------------------------------------
     # CUDA/CPU device, as needed
     # --------------------------------------------------------------------
     
+
+
     # --------------------------------------------------------------------
     # Prepare model
     # --------------------------------------------------------------------
@@ -67,8 +71,12 @@ def run(params:Dict):
     # --------------------------------------------------------------------
     # Train. Iterate over epochs.
     # --------------------------------------------------------------------
-    model = model.train(train_drug=train_data['drug'], train_rna=train_data['gene_expression'],
-                        val_drug=val_data['drug'], val_rna=val_data['gene_expression'])
+    model = model.train(train_drug=train_data['drug'], 
+                        train_rna=train_data['gene_expression'],
+                        train_label=train_data['label'],
+                        val_drug=val_data['drug'], 
+                        val_rna=val_data['gene_expression'],
+                        val_lable=val_data['label'])
     print(f'Saving model to {modelpath}')
     model.save_model(modelpath)
     print("Model Saved :{}".format(modelpath))

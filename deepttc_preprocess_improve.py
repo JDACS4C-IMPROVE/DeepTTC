@@ -95,9 +95,8 @@ def run(params:Dict):
     df_cell_all = omics_loader.dfs['cancer_gene_expression.tsv']
     df_drug_all = drugs_loader.dfs['drug_SMILES.tsv']
     df_drug_all = df_drug_all.reset_index()
-    df_drug_all.columns = [params["drug_col_name"], "smiles"]
+    df_drug_all.columns = [params["drug_col_name"], "SMILES"]
     params['drug_id'] = params["drug_col_name"]
-    df_drug_all["SMILES"] = df_drug_all["smiles"]
 
     if params["use_lincs"]:
         genes_fpath = filepath/"landmark_genes"
@@ -139,7 +138,7 @@ def run(params:Dict):
         obj = DataEncoding(params, params["input_supp_data_dir"], params["canc_col_name"],
                             params["sample_col_name"], params["y_col_name"], params["drug_col_name"])
 
-        df_drug_stage = df_drug_all[[params['drug_col_name'], 'SMILES']]
+        df_drug_stage = df_drug_all[df_drug_all[params['drug_col_name']].isin(df_y['drug_col_name'])]
 
         smile_encode = pd.Series(df_drug_all['SMILES'].unique()).apply(obj._drug2emb_encoder)
         uniq_smile_dict = dict(zip(df_drug_all['SMILES'].unique(), smile_encode))
@@ -153,7 +152,7 @@ def run(params:Dict):
         #df_cell.index = range(df_cell.shape[0])
 
         #df_drug_stage = df_drug_stage.drop(['index'], axis=1)
-        drug_columns = [x for x in df_drug_stage.columns if x not in [params["canc_col_name"], params["drug_col_name"]]]
+        drug_columns = ['drug_encoding']
         data = pd.merge(df_cell, df_drug_stage, on=params["canc_col_name"], how='inner')
         df_cell = df_cell.drop([params["canc_col_name"]], axis=1)
         gene_expression_columns = df_cell.columns
@@ -171,16 +170,17 @@ def run(params:Dict):
             df_gene_expression = df_gene_expression.astype(params["gene_dtype"])
 
         df_drug = data[drug_columns]
+        df_label = data[params['y_col_name']]
 
         out_path = os.path.join(params["output_dir"], frm.build_ml_data_file_name(params["data_format"], stage=stage))
-        df_output = {'drug': df_drug, 'gene_expression': df_gene_expression}
+        df_output = {'drug': df_drug, 'gene_expression': df_gene_expression, 'label': df_label}
         for key in df_output:
             df_output[key].to_hdf(out_path, key)
 
         # --------------------------------------------------------------------
         # [Req] Save response data (Y data)
         # --------------------------------------------------------------------
-        y_df = pd.DataFrame(data[['Label', params['y_col_name'], params['canc_col_name'], params['drug_col_name']]])
+        y_df = pd.DataFrame(data[[params['y_col_name'], params['canc_col_name'], params['drug_col_name']]])
         frm.save_stage_ydf(y_df, stage, params['output_dir'])
 
     return params["output_dir"]

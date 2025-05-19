@@ -52,7 +52,7 @@ class data_process_loader(data.Dataset):
         index = self.list_IDs[index]
         v_d = self.drug_df.iloc[index]['drug_encoding']
         v_p = np.array(self.rna_df.iloc[index])
-        y = self.labels[index]
+        y = self.labels.iloc[index]
 
         # print(v_d)
         # print(type(v_d))
@@ -208,7 +208,7 @@ class DeepTTC:
             r2_score(y_label, y_pred), \
             loss
 
-    def train(self, train_drug, train_rna, val_drug, val_rna):
+    def train(self, train_drug, train_rna, train_label, val_drug, val_rna, val_label):
 
         lr = self.args['learning_rate']
         decay = 0
@@ -225,9 +225,9 @@ class DeepTTC:
                   'num_workers': 0,
                   'drop_last': False}
         training_generator = data.DataLoader(data_process_loader(
-            train_drug.index.values, train_drug.Label.values, train_drug, train_rna), **params)
+            train_drug.index.values, train_label, train_drug, train_rna), **params)
         validation_generator = data.DataLoader(data_process_loader(
-            val_drug.index.values, val_drug.Label.values, val_drug, val_rna), **params)
+            val_drug.index.values, val_label, val_drug, val_rna), **params)
         print(training_generator)
 
         max_MSE = 1e31
