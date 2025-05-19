@@ -142,41 +142,6 @@ def build_common_data(params: Dict):
     return df_drug, gene_expression
 
 
-def _download_default_dataset(default_data_url):
-    url = default_data_url
-    improve_data_dir = '.'  # os.getenv("IMPROVE_DATA_DIR")
-    if improve_data_dir is None:
-        improve_data_dir = '.'
-
-    OUT_DIR = improve_data_dir
-    print('outdir after: {}'.format(OUT_DIR))
-
-    url_length = len(url.split('/'))-5
-    if not os.path.isdir(OUT_DIR):
-        os.mkdir(OUT_DIR)
-    url = url.strip('\'')
-    try:
-        subprocess.run(['rm', '*index*'])
-    except:
-        pass
-    command = ['wget', '--recursive', '--no-clobber', '-nH',
-               f'--cut-dirs={url_length}', '--no-parent', f'--directory-prefix={OUT_DIR}', f'{url}']
-    subprocess.run(command)
-    try:
-        subprocess.run(['rm', '*index*'])
-    except:
-        pass
-
-
-def download_model_data(params):
-    _download_default_dataset(params["default_data_url"])
-
-
-def download_dataset(params):
-    mainpath = Path(os.environ["IMPROVE_DATA_DIR"])
-    command = f'wget --directory-prefix={mainpath} --cut-dirs=7 -nH -np -m ftp://ftp.mcs.anl.gov/pub/candle/public/improve/benchmarks/single_drug_drp/benchmark-data-pilot1/csa_data'
-    tokens = command.split(' ')
-    subprocess.run(tokens)
 
 
 def prepare_dataframe(args, gene_expression, smiles, responses):
@@ -300,105 +265,7 @@ def scale_df(dataf, scaler_name="std", scaler=None, verbose=False):
     return dataf, scaler
 
 
-def build_stage_dependent_data(params: Dict,
-                               stage: str,
-                               df_drug: pd.DataFrame,
-                               df_cell_all: pd.DataFrame,
-                               scaler,
-                               ):
-    """Construct feature and ouput arrays according to training stage.
 
-    :params: Dict params: A Python dictionary of CANDLE/IMPROVE keywords
-             and parsed values.
-    :params: Dict inputdtd: Path to directories of input data stored in
-            dictionary with str key str and Path value.
-    :params: Dict outputdtd: Path to directories for output data stored
-            in dictionary with str key str and Path value.
-    :params: str stage: Type of partition to read. One of the following:
-             'train', 'val', 'test'.
-    :params: str source: DRP source name.
-    :params: int split_id: Split id. If -1, use all data. Note that this
-             assumes that split_id has been constructed to take into
-             account all the data sources.
-    :params: pd.Dataframe df_drug: Pandas dataframe with drug features.
-    :params: pd.Dataframe df_cell_all: Pandas dataframe with cell features.
-    :params: scikit scaler: Scikit object for scaling data.
-    """
-    #args = params  # candle.ArgumentStruct(**params)
-    stages = {"train": params["train_split_file"],
-              "val": params["val_split_file"],
-              "test": params["test_split_file"]}
-    # --------------------------------------------------------------------
-    # [Req] Create dataloaders and get response data - DRP specific
-    # --------------------------------------------------------------------
-    #print(stages["test"])
-    for key in params:
-        if type(params[key]) == str:
-            params[key] = params[key].strip('"')
-    df_response = drp.DrugResponseLoader(params,
-                                         split_file=stages[stage],
-                                         verbose=False).dfs["response.tsv"]
-    
-    # --------------------------------------------------------------------
-    # [MODEL] Preprocess X data
-    # --------------------------------------------------------------------
-    # Retain (canc, drug) response samples for which omic data is available
-    df_y, df_cell = get_common_samples(df1=df_response,
-                                       df2=df_cell_all,
-                                       ref_col=params["canc_col_name"])
-    print(df_y[[params["canc_col_name"], params["drug_col_name"]]].nunique())
-
-    # Normalize features using training set
-    if stage == "train":  # Ignore scaler object even if specified
-        # Normalize
-        df_cell, scaler = scale_df(df_cell, scaler_name=params["scaling"])
-        if params["scaling"] is not None and params["scaling"] != "none":
-            # Store normalization object
-            scaler_fname = os.path.join(
-                params["output_dir"], "cell_xdata_scaler.gz")
-            joblib.dump(scaler, scaler_fname)
-            print("Scaling object created is stored in: ", scaler_fname)
-    else:
-        # Use passed scikit scaler object
-        df_cell, _ = scale_df(df_cell, scaler=scaler)
-
-    # Sub-select desired response column (y_col_name)
-    # And reduce response dataframe to 3 columns: drug_id, cell_id and selected drug_response
-    df_y = df_y[[params["drug_col_name"],
-                 params["canc_col_name"], params["y_col_name"]]]
-    # Combine data
-    data, gene_expression_columns, drug_columns = prepare_dataframe(params,
-                                                                    df_cell, df_drug, df_y)
-    # xd, xc, y = compose_data_arrays(
-    #    df_y, df_drug, df_cell, params["drug_col_name"], params["canc_col_name"])
-    # Save the processed (all) data as PyTorch dataset
-    # xd['Label'] = y
-
-    # --------------------------------------------------------------------
-    # [MODEL] Save X data
-    # --------------------------------------------------------------------
-    # Save the subset of y data
-    # fname = f"{stage}_{params['y_data_suffix']}.csv"
-    #df_gene_expression = data[gene_expression_columns]
-    df_gene_expression = process_gene_expression(data, gene_expression_columns, params["gene_dtype"])
-    df_drug = data[drug_columns]
-    out_path = os.path.join(params["output_dir"], frm.build_ml_data_file_name(
-        params["data_format"], stage=stage))  # f'{stage}_data.h5')
-    print(out_path)
-    df_output = {'drug': df_drug, 'gene_expression': df_gene_expression}
-    for key in df_output:
-        df_output[key].to_hdf(out_path, key)
-    # pickle.dump(df_output, open(out_path, 'wb'), protocol=4)
-
-    # --------------------------------------------------------------------
-    # [Req] Save response data (Y data)
-    # --------------------------------------------------------------------
-    data[params['y_col_name']] = data['Label']
-    y_df = pd.DataFrame(
-        data[['Label', params['y_col_name'], params['canc_col_name'], params['drug_col_name']]])
-    frm.save_stage_ydf(y_df, stage, params['output_dir'])
-
-    return scaler
 
 
 def run(params:Dict):
@@ -412,16 +279,74 @@ def run(params:Dict):
     """
 
     df_drug, df_cell_all = build_common_data(params)
-    stages = ["train", "val", "test"]
+    stages = {"train": params["train_split_file"],
+            "val": params["val_split_file"],
+            "test": params["test_split_file"]}
     scaler = None
-    for st in stages:
-        print(f"Building stage: {st}")
-        scaler = build_stage_dependent_data(params,
-                                            st,
-                                            df_drug,
-                                            df_cell_all,
-                                            scaler,
-                                            )
+    for stage, split_file in stages.items():
+        print(f"Building stage: {stage}")
+
+        # --------------------------------------------------------------------
+        # [Req] Create dataloaders and get response data - DRP specific
+        # --------------------------------------------------------------------
+        for key in params:
+            if type(params[key]) == str:
+                params[key] = params[key].strip('"')
+        df_response = drp.DrugResponseLoader(params,
+                                            split_file=stages[stage],
+                                            verbose=False).dfs["response.tsv"]
+        
+        # --------------------------------------------------------------------
+        # [MODEL] Preprocess X data
+        # --------------------------------------------------------------------
+        # Retain (canc, drug) response samples for which omic data is available
+        df_y, df_cell = get_common_samples(df1=df_response,
+                                        df2=df_cell_all,
+                                        ref_col=params["canc_col_name"])
+        print(df_y[[params["canc_col_name"], params["drug_col_name"]]].nunique())
+
+        # Normalize features using training set
+        if stage == "train":  # Ignore scaler object even if specified
+            # Normalize
+            df_cell, scaler = scale_df(df_cell, scaler_name=params["scaling"])
+            if params["scaling"] is not None and params["scaling"] != "none":
+                # Store normalization object
+                scaler_fname = os.path.join(
+                    params["output_dir"], "cell_xdata_scaler.gz")
+                joblib.dump(scaler, scaler_fname)
+                print("Scaling object created is stored in: ", scaler_fname)
+        else:
+            # Use passed scikit scaler object
+            df_cell, _ = scale_df(df_cell, scaler=scaler)
+
+        # Sub-select desired response column (y_col_name)
+        # And reduce response dataframe to 3 columns: drug_id, cell_id and selected drug_response
+        df_y = df_y[[params["drug_col_name"],
+                    params["canc_col_name"], params["y_col_name"]]]
+        # Combine data
+        data, gene_expression_columns, drug_columns = prepare_dataframe(params,
+                                                                        df_cell, df_drug, df_y)
+
+        # --------------------------------------------------------------------
+        # [MODEL] Save X data
+        # --------------------------------------------------------------------
+        # Save the subset of y data
+        df_gene_expression = process_gene_expression(data, gene_expression_columns, params["gene_dtype"])
+        df_drug = data[drug_columns]
+        out_path = os.path.join(params["output_dir"], frm.build_ml_data_file_name(
+            params["data_format"], stage=stage))  # f'{stage}_data.h5')
+        print(out_path)
+        df_output = {'drug': df_drug, 'gene_expression': df_gene_expression}
+        for key in df_output:
+            df_output[key].to_hdf(out_path, key)
+
+        # --------------------------------------------------------------------
+        # [Req] Save response data (Y data)
+        # --------------------------------------------------------------------
+        data[params['y_col_name']] = data['Label']
+        y_df = pd.DataFrame(
+            data[['Label', params['y_col_name'], params['canc_col_name'], params['drug_col_name']]])
+        frm.save_stage_ydf(y_df, stage, params['output_dir'])
 
     return params["output_dir"]
 
