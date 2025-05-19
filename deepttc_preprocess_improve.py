@@ -24,27 +24,6 @@ from model_params_def import preprocess_params
 
 filepath = Path(__file__).resolve().parent  # [Req]
 
-def process_gene_expression(data, gene_expression_columns, dtype=None):
-    """
-    Extracts gene expression data and allows reducing memory usage with a lower precision float type.
-
-    Args:
-        data (pd.DataFrame): The full dataset.
-        gene_expression_columns (list): List of gene expression column names.
-        dtype (str, optional): Floating point type ('float32' or 'float16'). Defaults to None (keeps original dtype).
-
-    Returns:
-        pd.DataFrame: Processed gene expression data with the selected float type.
-    """
-    df_gene_expression = data[gene_expression_columns]
-    
-    # Convert dtype if provided
-    if dtype is not None:
-        if dtype not in ["float32", "float16"]:
-            raise ValueError("dtype must be 'float32' or 'float16'")
-        df_gene_expression = df_gene_expression.astype(dtype)
-
-    return df_gene_expression
 
 def gene_selection(df, genes_fpath, canc_col_name):
     """ Takes a dataframe omics data (e.g., gene expression) and retains only
@@ -52,17 +31,11 @@ def gene_selection(df, genes_fpath, canc_col_name):
     """
     with open(genes_fpath) as f:
         genes = [str(line.rstrip()) for line in f]
-    # genes = ["ge_" + str(g) for g in genes]  # This is for our legacy data
-    # print("Genes count: {}".format(len(set(genes).intersection(set(df.columns[1:])))))
     genes = sorted(list(set(genes).intersection(set(df.columns[1:]))))
-    # genes = drp.common_elements(genes, df.columns[1:])
     cols = [canc_col_name] + genes
     return df[cols]
 
-def get_common_samples(
-        df1: pd.DataFrame,
-        df2: pd.DataFrame,
-        ref_col: str):
+def get_common_samples(df1, df2, ref_col):
     # Retain df1 and df2 samples with common ref_col
     common_ids = list(set(df1[ref_col]).intersection(df2[ref_col]))
     df1 = df1[df1[ref_col].isin(common_ids)].reset_index(drop=True)
@@ -107,15 +80,6 @@ def scale_df(dataf, scaler_name="std", scaler=None, verbose=False):
 
 
 
-
-
-
-
-
-
-
-
-
 def run(params:Dict):
 
     # --------------------------------------------------------------------
@@ -145,21 +109,10 @@ def run(params:Dict):
     scaler = None
     for stage, split_file in stages.items():
         print(f"Building stage: {stage}")
-
-        # --------------------------------------------------------------------
-        # [Req] Create dataloaders and get response data - DRP specific
-        # --------------------------------------------------------------------
-        for key in params:
-            if type(params[key]) == str:
-                params[key] = params[key].strip('"')
         df_response = drp.DrugResponseLoader(params,
                                             split_file=stages[stage],
                                             verbose=False).dfs["response.tsv"]
-        
-        # --------------------------------------------------------------------
-        # [MODEL] Preprocess X data
-        # --------------------------------------------------------------------
-        # Retain (canc, drug) response samples for which omic data is available
+
         df_y, df_cell = get_common_samples(df1=df_response,
                                         df2=df_cell_all,
                                         ref_col=params["canc_col_name"])
@@ -167,12 +120,10 @@ def run(params:Dict):
 
         # Normalize features using training set
         if stage == "train":  # Ignore scaler object even if specified
-            # Normalize
             df_cell, scaler = scale_df(df_cell, scaler_name=params["scaling"])
             if params["scaling"] is not None and params["scaling"] != "none":
                 # Store normalization object
-                scaler_fname = os.path.join(
-                    params["output_dir"], "cell_xdata_scaler.gz")
+                scaler_fname = os.path.join(params["output_dir"], "cell_xdata_scaler.gz")
                 joblib.dump(scaler, scaler_fname)
                 print("Scaling object created is stored in: ", scaler_fname)
         else:
@@ -194,15 +145,14 @@ def run(params:Dict):
         uniq_smile_dict = dict(zip(df_drug_all['SMILES'].unique(), smile_encode))
 
         df_drug_stage['drug_encoding'] = [uniq_smile_dict[i] for i in df_drug_stage['SMILES']]
-        df_drug_stage = df_drug_stage.reset_index()
+        #df_drug_stage = df_drug_stage.reset_index()
 
-        #response_data.columns = [params["canc_col_name"], params["drug_col_name"], 'Label']
         df_drug_stage = pd.merge(df_y, df_drug_stage, on=params["drug_col_name"], how='inner')
 
-        df_drug_stage.index = range(df_drug_stage.shape[0])
-        df_cell.index = range(df_cell.shape[0])
+        #df_drug_stage.index = range(df_drug_stage.shape[0])
+        #df_cell.index = range(df_cell.shape[0])
 
-        df_drug_stage = df_drug_stage.drop(['index'], axis=1)
+        #df_drug_stage = df_drug_stage.drop(['index'], axis=1)
         drug_columns = [x for x in df_drug_stage.columns if x not in [params["canc_col_name"], params["drug_col_name"]]]
         data = pd.merge(df_cell, df_drug_stage, on=params["canc_col_name"], how='inner')
         df_cell = df_cell.drop([params["canc_col_name"]], axis=1)
@@ -212,11 +162,18 @@ def run(params:Dict):
         # [MODEL] Save X data
         # --------------------------------------------------------------------
         # Save the subset of y data
-        df_gene_expression = process_gene_expression(data, gene_expression_columns, params["gene_dtype"])
+        df_gene_expression = process_gene_expression(data, gene_expression_columns, )
+        df_gene_expression = data[gene_expression_columns]
+
+        # Convert dtype if provided
+        if params["gene_dtype"] is not None:
+            if params["gene_dtype"] not in ["float32", "float16"]:
+                raise ValueError("dtype must be 'float32' or 'float16'")
+            df_gene_expression = df_gene_expression.astype(params["gene_dtype"])
+
         df_drug = data[drug_columns]
-        out_path = os.path.join(params["output_dir"], frm.build_ml_data_file_name(
-            params["data_format"], stage=stage))  # f'{stage}_data.h5')
-        print(out_path)
+
+        out_path = os.path.join(params["output_dir"], frm.build_ml_data_file_name(params["data_format"], stage=stage))
         df_output = {'drug': df_drug, 'gene_expression': df_gene_expression}
         for key in df_output:
             df_output[key].to_hdf(out_path, key)
@@ -224,8 +181,7 @@ def run(params:Dict):
         # --------------------------------------------------------------------
         # [Req] Save response data (Y data)
         # --------------------------------------------------------------------
-        y_df = pd.DataFrame(
-            data[['Label', params['y_col_name'], params['canc_col_name'], params['drug_col_name']]])
+        y_df = pd.DataFrame(data[['Label', params['y_col_name'], params['canc_col_name'], params['drug_col_name']]])
         frm.save_stage_ydf(y_df, stage, params['output_dir'])
 
     return params["output_dir"]
