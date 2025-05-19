@@ -162,7 +162,6 @@ def run(params:Dict):
         # [MODEL] Save X data
         # --------------------------------------------------------------------
         # Save the subset of y data
-        df_gene_expression = process_gene_expression(data, gene_expression_columns, )
         df_gene_expression = data[gene_expression_columns]
 
         # Convert dtype if provided
