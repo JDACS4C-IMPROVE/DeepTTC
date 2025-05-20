@@ -18,14 +18,6 @@ filepath = Path(__file__).resolve().parent  # [Req]
 
 
 def run(params:Dict):
-    # ------------------------------------------------------
-    # [Req] Validity check of feature representations
-    # ------------------------------------------------------
-    # not needed for this data/model
-
-    # ------------------------------------------------------
-    # [Req] Determine preprocessing on training data
-    # ------------------------------------------------------
     print("Load omics data.")
     ge = drp.get_x_data(file = params['cell_transcriptomic_file'], 
                                         benchmark_dir = params['input_dir'], 
@@ -34,8 +26,23 @@ def run(params:Dict):
     smiles = drp.get_x_data(file = params['drug_smiles_file'], 
                     benchmark_dir = params['input_dir'], 
                     column_name = params['drug_col_name'])
-    smiles.columns = ["SMILES"]
+    smiles.columns = ['SMILES']
+    # ------------------------------------------------------
+    # [Req] Validity check of feature representations
+    # ------------------------------------------------------
+    smi_to_drop = []
+    for i, row in smiles.iterows():
+        try:
+            smi = drug2emb_encoder(row['SMILES'])
+        except:
+            print(f"Invalid SMILE string {row['SMILES']}, ID is {i}, removing from analysis.")
+            smi_to_drop = smi_to_drop + [i]
+            
+    smiles = smiles.drop(smi_to_drop)
 
+    # ------------------------------------------------------
+    # [Req] Determine preprocessing on training data
+    # ------------------------------------------------------
     print("Load train response data.")
     response_train = drp.get_response_data(split_file=params["train_split_file"], 
                                    benchmark_dir=params['input_dir'], 
