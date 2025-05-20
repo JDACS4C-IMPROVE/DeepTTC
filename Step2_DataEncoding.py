@@ -13,7 +13,7 @@ import codecs
 from subword_nmt.apply_bpe import BPE
 #from Step1_getData import GetData
 
-def drug2emb_encoder(self, smile, vocab_dir):
+def drug2emb_encoder(smile):
     vocab_path = "./drug_codes_chembl_freq_1500.txt"
     sub_csv = pd.read_csv("./subword_units_map_chembl_freq_1500.csv")
 
