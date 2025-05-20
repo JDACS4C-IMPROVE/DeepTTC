@@ -73,8 +73,8 @@ def run(params:Dict):
     # --------------------------------------------------------------------
     test_data = {}
     test_data['drug'] = pd.read_hdf(os.path.join(params["input_data_dir"],test_data_fname), key='drug')
-    test_data['gene_expression'] = pd.read_hdf(os.path.join(params["input_data_dir"],
-        test_data_fname), key='gene_expression')
+    test_data['gene_expression'] = pd.read_hdf(os.path.join(params["input_data_dir"], test_data_fname), key='gene_expression')
+    test_data['label'] = pd.read_hdf(os.path.join(params["input_data_dir"],test_data_fname), key='label')
     # --------------------------------------------------------------------
     # CUDA/CPU device, as needed
     # --------------------------------------------------------------------
@@ -87,8 +87,9 @@ def run(params:Dict):
     model = DeepTTC(modeldir=modelpath, args=params, gene_dim=input_gene_dim)
     model.load_pretrained(modelpath)
     # Compute predictions
-    y_label, y_pred, mse, rmse, person, p_val, spearman, s_p_val, CI = model.predict(
-        test_data['drug'], test_data['gene_expression'])
+    y_label, y_pred, mse, rmse, person, p_val, spearman, s_p_val, CI = model.predict(test_data['drug'], 
+                                                                                     test_data['gene_expression'],
+                                                                                     test_data['label'])
 
     # ------------------------------------------------------
     # [Req] Save raw predictions in dataframe
