@@ -5,7 +5,7 @@ from typing import Dict
 # [MODEL] Model-specific imports, as needed
 import pandas as pd
 import os
-from Step2_DataEncoding import DataEncoding
+from Step2_DataEncoding import drug2emb_encoder
 
 # [Req] Core improvelib imports
 from improvelib.applications.drug_response_prediction.config import DRPPreprocessConfig
@@ -72,9 +72,9 @@ def run(params:Dict):
         ge_stage = drp.transform_data(ge_stage, 'ge_transform', params['output_dir'])
 
         # Preprocess drug data
-        obj = DataEncoding(params, params["input_supp_data_dir"], params["canc_col_name"],
-                            params["sample_col_name"], params["y_col_name"], params["drug_col_name"])
-        smile_encode = pd.Series(smiles_stage['SMILES'].unique()).apply(obj._drug2emb_encoder)
+        #obj = DataEncoding(params, params["input_supp_data_dir"], params["canc_col_name"],
+        #                    params["sample_col_name"], params["y_col_name"], params["drug_col_name"])
+        smile_encode = pd.Series(smiles_stage['SMILES'].unique()).apply(drug2emb_encoder)
         uniq_smile_dict = dict(zip(smiles_stage['SMILES'].unique(), smile_encode))
         smiles_stage['drug_encoding'] = [uniq_smile_dict[i] for i in smiles_stage['SMILES']]
 
