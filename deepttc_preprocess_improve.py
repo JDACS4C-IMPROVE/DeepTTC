@@ -95,7 +95,7 @@ def run(params:Dict):
     smiles = drp.get_x_data(file = params['drug_smiles_file'], 
                     benchmark_dir = params['input_dir'], 
                     column_name = params['drug_col_name'])
-    #smiles.columns = ["SMILES"]
+    smiles.columns = ["SMILES"]
     #smiles = smiles.reset_index()
 
     print("Load train response data.")
