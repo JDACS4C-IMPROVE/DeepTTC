@@ -4,10 +4,9 @@ from typing import Dict
 
 # [Req] IMPROVE/CANDLE imports
 from improvelib.applications.drug_response_prediction.config import DRPInferConfig
-from improvelib.utils import str2bool
 import improvelib.utils as frm
 from model_params_def import infer_params
-from DeepTTC_candle import *
+from Step3_model import DeepTTC
 
 # Model-specific imports, as needed
 import os
@@ -121,12 +120,14 @@ def run(params:Dict):
 # [Req]
 def main(args):
     cfg = DRPInferConfig()
-    params = cfg.initialize_parameters(
-        pathToModelDir=filepath,
-        default_config="deepttc_params.txt",
-        additional_definitions=infer_params
-    )
+    params = cfg.initialize_parameters(pathToModelDir=filepath,
+                                       default_config="deepttc_params.ini",
+                                       additional_definitions=infer_params)
+    timer_infer = frm.Timer()
     status = run(params)
+    timer_infer.save_timer(dir_to_save=params["output_dir"], 
+                           filename='runtime_infer.json', 
+                           extra_dict={"stage": "infer"})
     print("\nFinished model inference.")
 
 

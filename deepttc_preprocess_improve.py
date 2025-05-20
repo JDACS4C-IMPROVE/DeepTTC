@@ -3,79 +3,18 @@ from pathlib import Path
 from typing import Dict
 
 # [MODEL] Model-specific imports, as needed
-import subprocess
-import joblib
 import pandas as pd
-import numpy as np
-# import pickle
 import os
 from Step2_DataEncoding import DataEncoding
-from sklearn.preprocessing import StandardScaler, MaxAbsScaler, MinMaxScaler, RobustScaler
 
 # [Req] Core improvelib imports
 from improvelib.applications.drug_response_prediction.config import DRPPreprocessConfig
-from improvelib.utils import str2bool
 import improvelib.utils as frm
 # [Req] Application-specific (DRP) imports
 import improvelib.applications.drug_response_prediction.drp_utils as drp
 from model_params_def import preprocess_params
 
 filepath = Path(__file__).resolve().parent  # [Req]
-
-
-def gene_selection(df, genes_fpath, canc_col_name):
-    """ Takes a dataframe omics data (e.g., gene expression) and retains only
-    the genes specified in genes_fpath.
-    """
-    with open(genes_fpath) as f:
-        genes = [str(line.rstrip()) for line in f]
-    genes = sorted(list(set(genes).intersection(set(df.columns[1:]))))
-    cols = [canc_col_name] + genes
-    return df[cols]
-
-def get_common_samples(df1, df2, ref_col):
-    # Retain df1 and df2 samples with common ref_col
-    common_ids = list(set(df1[ref_col]).intersection(df2[ref_col]))
-    df1 = df1[df1[ref_col].isin(common_ids)].reset_index(drop=True)
-    df2 = df2[df2[ref_col].isin(common_ids)].reset_index(drop=True)
-    return df1, df2
-
-
-def scale_df(dataf, scaler_name="std", scaler=None, verbose=False):
-    if scaler_name is None or scaler_name == "none":
-        if verbose:
-            print("Scaler is None (no df scaling).")
-        return dataf, None
-
-    # Scale data
-    # Select only numerical columns in data frame
-    df_num = dataf.select_dtypes(include="number")
-
-    if scaler is None:  # Create scikit scaler object
-        if scaler_name == "std":
-            scaler = StandardScaler()
-        elif scaler_name == "minmax":
-            scaler = MinMaxScaler()
-        elif scaler_name == "minabs":
-            scaler = MaxAbsScaler()
-        elif scaler_name == "robust":
-            scaler = RobustScaler()
-        else:
-            print(
-                f"The specified scaler {scaler_name} is not implemented (no df scaling).")
-            return dataf, None
-
-        # Scale data according to new scaler
-        df_norm = scaler.fit_transform(df_num)
-    else:  # Apply passed scikit scaler
-        # Scale data according to specified scaler
-        df_norm = scaler.transform(df_num)
-
-    # Copy back scaled data to data frame
-    dataf[df_num.columns] = df_norm
-    return dataf, scaler
-
-
 
 
 def run(params:Dict):
@@ -96,7 +35,6 @@ def run(params:Dict):
                     benchmark_dir = params['input_dir'], 
                     column_name = params['drug_col_name'])
     smiles.columns = ["SMILES"]
-    #smiles = smiles.reset_index()
 
     print("Load train response data.")
     response_train = drp.get_response_data(split_file=params["train_split_file"], 
@@ -143,7 +81,6 @@ def run(params:Dict):
         print(f"Merge {stage} data")
         data = pd.merge(response_stage, smiles_stage, on=params["drug_col_name"], how='inner')
         data = pd.merge(ge_stage, data, on=params["canc_col_name"], how='inner')
-        #ge_stage = ge_stage.drop([params["canc_col_name"]], axis=1) # should be index
         gene_expression_columns = ge_stage.columns
         print(gene_expression_columns)
         drug_columns = ['drug_encoding']
@@ -175,16 +112,17 @@ def run(params:Dict):
 
     return params["output_dir"]
 
-
+# [Req]
 def main(args):
-    # [Req]
     cfg = DRPPreprocessConfig()
-    params = cfg.initialize_parameters(
-        filepath,
-        default_config="deepttc_params.txt",
-        additional_definitions=preprocess_params)
-
+    params = cfg.initialize_parameters(pathToModelDir=filepath,
+                                       default_config="deepttc_params.ini",
+                                       additional_definitions=preprocess_params)
+    timer_preprocess = frm.Timer()
     ml_data_outdir = run(params)
+    timer_preprocess.save_timer(dir_to_save=params["output_dir"], 
+                                filename='runtime_preprocess.json', 
+                                extra_dict={"stage": "preprocess"})
     print("\nFinished data preprocessing.")
 
 

@@ -4,16 +4,12 @@ from typing import Dict
 
 # Model-specific imports
 import os
-import json
-# import pickle
 import pandas as pd
-from Step3_model import *
+from Step3_model import DeepTTC
 
 # [Req] IMPROVE imports
 from improvelib.applications.drug_response_prediction.config import DRPTrainConfig
-from improvelib.utils import str2bool
 import improvelib.utils as frm
-from improvelib.metrics import compute_metrics
 from model_params_def import train_params
 
 filepath = Path(__file__).resolve().parent # [Req]
@@ -112,16 +108,17 @@ def run(params:Dict):
 
     return val_scores
 
-
+# [Req]
 def main(args):
-    filepath = Path(__file__).resolve().parent
-
     cfg = DRPTrainConfig()
     params = cfg.initialize_parameters(pathToModelDir=filepath,
-                                       default_config="deepttc_params.txt",
-                                       additional_definitions=train_params
-                                       )
+                                       default_config="deepttc_params.ini",
+                                       additional_definitions=train_params)
+    timer_train = frm.Timer()
     val_scores = run(params)
+    timer_train.save_timer(dir_to_save=params["output_dir"], 
+                           filename='runtime_train.json', 
+                           extra_dict={"stage": "train"})
     print("\nFinished training model.")
 
 
