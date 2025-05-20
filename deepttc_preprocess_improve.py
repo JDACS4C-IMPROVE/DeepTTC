@@ -143,8 +143,9 @@ def run(params:Dict):
         print(f"Merge {stage} data")
         data = pd.merge(response_stage, smiles_stage, on=params["drug_col_name"], how='inner')
         data = pd.merge(ge_stage, data, on=params["canc_col_name"], how='inner')
-        ge_stage = ge_stage.drop([params["canc_col_name"]], axis=1) # should be index
+        #ge_stage = ge_stage.drop([params["canc_col_name"]], axis=1) # should be index
         gene_expression_columns = ge_stage.columns
+        print(gene_expression_columns)
         drug_columns = ['drug_encoding']
 
         # --------------------------------------------------------------------
