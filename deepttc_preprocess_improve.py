@@ -96,7 +96,6 @@ def run(params:Dict):
     df_drug_all = drugs_loader.dfs['drug_SMILES.tsv']
     df_drug_all = df_drug_all.reset_index()
     df_drug_all.columns = [params["drug_col_name"], "SMILES"]
-    params['drug_id'] = params["drug_col_name"]
 
     if params["use_lincs"]:
         genes_fpath = filepath/"landmark_genes"
@@ -115,9 +114,11 @@ def run(params:Dict):
         df_y, df_cell = get_common_samples(df1=df_response,
                                         df2=df_cell_all,
                                         ref_col=params["canc_col_name"])
+        df_drug_stage = df_drug_all[df_drug_all[params['drug_col_name']].isin(df_y[params['drug_col_name']])]
         print(df_y[[params["canc_col_name"], params["drug_col_name"]]].nunique())
+        df_y = df_y[[params["drug_col_name"], params["canc_col_name"], params["y_col_name"]]]
 
-        # Normalize features using training set
+        # Preprocess cell data
         if stage == "train":  # Ignore scaler object even if specified
             df_cell, scaler = scale_df(df_cell, scaler_name=params["scaling"])
             if params["scaling"] is not None and params["scaling"] != "none":
@@ -129,29 +130,15 @@ def run(params:Dict):
             # Use passed scikit scaler object
             df_cell, _ = scale_df(df_cell, scaler=scaler)
 
-        # Sub-select desired response column (y_col_name)
-        # And reduce response dataframe to 3 columns: drug_id, cell_id and selected drug_response
-        df_y = df_y[[params["drug_col_name"], params["canc_col_name"], params["y_col_name"]]]
-        df_y['Label'] = df_y[params['y_col_name']]
-        # Combine data
-
+        # Preprocess drug data
         obj = DataEncoding(params, params["input_supp_data_dir"], params["canc_col_name"],
                             params["sample_col_name"], params["y_col_name"], params["drug_col_name"])
-
-        df_drug_stage = df_drug_all[df_drug_all[params['drug_col_name']].isin(df_y[params['drug_col_name']])]
-
         smile_encode = pd.Series(df_drug_all['SMILES'].unique()).apply(obj._drug2emb_encoder)
         uniq_smile_dict = dict(zip(df_drug_all['SMILES'].unique(), smile_encode))
-
         df_drug_stage['drug_encoding'] = [uniq_smile_dict[i] for i in df_drug_stage['SMILES']]
-        #df_drug_stage = df_drug_stage.reset_index()
 
+        # Combine data
         df_drug_stage = pd.merge(df_y, df_drug_stage, on=params["drug_col_name"], how='inner')
-
-        #df_drug_stage.index = range(df_drug_stage.shape[0])
-        #df_cell.index = range(df_cell.shape[0])
-
-        #df_drug_stage = df_drug_stage.drop(['index'], axis=1)
         drug_columns = ['drug_encoding']
         data = pd.merge(df_cell, df_drug_stage, on=params["canc_col_name"], how='inner')
         df_cell = df_cell.drop([params["canc_col_name"]], axis=1)
@@ -160,7 +147,6 @@ def run(params:Dict):
         # --------------------------------------------------------------------
         # [MODEL] Save X data
         # --------------------------------------------------------------------
-        # Save the subset of y data
         df_gene_expression = data[gene_expression_columns]
 
         # Convert dtype if provided
