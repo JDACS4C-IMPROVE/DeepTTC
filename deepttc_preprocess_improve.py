@@ -17,8 +17,6 @@ from improvelib.applications.drug_response_prediction.config import DRPPreproces
 from improvelib.utils import str2bool
 import improvelib.utils as frm
 # [Req] Application-specific (DRP) imports
-import improvelib.applications.drug_response_prediction.drug_utils as drugs_utils
-import improvelib.applications.drug_response_prediction.omics_utils as omics_utils
 import improvelib.applications.drug_response_prediction.drp_utils as drp
 from model_params_def import preprocess_params
 
@@ -81,68 +79,73 @@ def scale_df(dataf, scaler_name="std", scaler=None, verbose=False):
 
 
 def run(params:Dict):
-
-    # --------------------------------------------------------------------
-    # [Req] Create dataloaders
-    # --------------------------------------------------------------------
-    omics_loader = omics_utils.OmicsLoader(params)
-    drugs_loader = drugs_utils.DrugsLoader(params)
+    # ------------------------------------------------------
+    # [Req] Validity check of feature representations
+    # ------------------------------------------------------
+    # not needed for this data/model
 
     # ------------------------------------------------------
-    # [Req] Load X data (feature representations)
+    # [Req] Determine preprocessing on training data
     # ------------------------------------------------------
+    print("Load omics data.")
+    ge = drp.get_x_data(file = params['cell_transcriptomic_file'], 
+                                        benchmark_dir = params['input_dir'], 
+                                        column_name = params['canc_col_name'])
+    print("Load drug data.")
+    smiles = drp.get_x_data(file = params['drug_smiles_file'], 
+                    benchmark_dir = params['input_dir'], 
+                    column_name = params['drug_col_name'])
+    #smiles.columns = ["SMILES"]
+    #smiles = smiles.reset_index()
 
-    df_cell_all = omics_loader.dfs['cancer_gene_expression.tsv']
-    df_drug_all = drugs_loader.dfs['drug_SMILES.tsv']
-    df_drug_all = df_drug_all.reset_index()
-    df_drug_all.columns = [params["drug_col_name"], "SMILES"]
+    print("Load train response data.")
+    response_train = drp.get_response_data(split_file=params["train_split_file"], 
+                                   benchmark_dir=params['input_dir'], 
+                                   response_file=params['y_data_file'])
+    print("Find intersection of training data.")
+    response_train = drp.get_response_with_features(response_train, ge, params['canc_col_name'])
+    response_train = drp.get_response_with_features(response_train, smiles, params['drug_col_name'])
+    ge_train = drp.get_features_in_response(ge, response_train, params['canc_col_name'])
 
-    if params["use_lincs"]:
-        genes_fpath = filepath/"landmark_genes"
-        df_cell_all = gene_selection(df_cell_all, genes_fpath, canc_col_name=params["canc_col_name"])
+    print("Determine transformations.")
+    drp.determine_transform(ge_train, 'ge_transform', params['cell_transcriptomic_transform'], params['output_dir'])
+
+    # ------------------------------------------------------
+    # [Req] Construct ML data for every stage (train, val, test)
+    # ------------------------------------------------------
+    # Dict with split files corresponding to the three sets (train, val, and test)
 
     stages = {"train": params["train_split_file"],
             "val": params["val_split_file"],
             "test": params["test_split_file"]}
-    scaler = None
+    
     for stage, split_file in stages.items():
-        print(f"Building stage: {stage}")
-        df_response = drp.DrugResponseLoader(params,
-                                            split_file=stages[stage],
-                                            verbose=False).dfs["response.tsv"]
+        print(f"Prepare data for stage {stage}.")
+        print(f"Find intersection of {stage} data.")
+        response_stage = drp.get_response_data(split_file=split_file, 
+                                benchmark_dir=params['input_dir'], 
+                                response_file=params['y_data_file'])
+        response_stage = drp.get_response_with_features(response_stage, ge, params['canc_col_name'])
+        response_stage = drp.get_response_with_features(response_stage, smiles, params['drug_col_name'])
+        ge_stage = drp.get_features_in_response(ge, response_stage, params['canc_col_name'])
+        smiles_stage = drp.get_features_in_response(smiles, response_stage, params['drug_col_name'])
 
-        df_y, df_cell = get_common_samples(df1=df_response,
-                                        df2=df_cell_all,
-                                        ref_col=params["canc_col_name"])
-        df_drug_stage = df_drug_all[df_drug_all[params['drug_col_name']].isin(df_y[params['drug_col_name']])]
-        print(df_y[[params["canc_col_name"], params["drug_col_name"]]].nunique())
-        df_y = df_y[[params["drug_col_name"], params["canc_col_name"], params["y_col_name"]]]
-
-        # Preprocess cell data
-        if stage == "train":  # Ignore scaler object even if specified
-            df_cell, scaler = scale_df(df_cell, scaler_name=params["scaling"])
-            if params["scaling"] is not None and params["scaling"] != "none":
-                # Store normalization object
-                scaler_fname = os.path.join(params["output_dir"], "cell_xdata_scaler.gz")
-                joblib.dump(scaler, scaler_fname)
-                print("Scaling object created is stored in: ", scaler_fname)
-        else:
-            # Use passed scikit scaler object
-            df_cell, _ = scale_df(df_cell, scaler=scaler)
+        print(f"Transform {stage} data.")
+        ge_stage = drp.transform_data(ge_stage, 'ge_transform', params['output_dir'])
 
         # Preprocess drug data
         obj = DataEncoding(params, params["input_supp_data_dir"], params["canc_col_name"],
                             params["sample_col_name"], params["y_col_name"], params["drug_col_name"])
-        smile_encode = pd.Series(df_drug_all['SMILES'].unique()).apply(obj._drug2emb_encoder)
-        uniq_smile_dict = dict(zip(df_drug_all['SMILES'].unique(), smile_encode))
-        df_drug_stage['drug_encoding'] = [uniq_smile_dict[i] for i in df_drug_stage['SMILES']]
+        smile_encode = pd.Series(smiles_stage['SMILES'].unique()).apply(obj._drug2emb_encoder)
+        uniq_smile_dict = dict(zip(smiles_stage['SMILES'].unique(), smile_encode))
+        smiles_stage['drug_encoding'] = [uniq_smile_dict[i] for i in smiles_stage['SMILES']]
 
-        # Combine data
-        df_drug_stage = pd.merge(df_y, df_drug_stage, on=params["drug_col_name"], how='inner')
+        print(f"Merge {stage} data")
+        data = pd.merge(response_stage, smiles_stage, on=params["drug_col_name"], how='inner')
+        data = pd.merge(ge_stage, data, on=params["canc_col_name"], how='inner')
+        ge_stage = ge_stage.drop([params["canc_col_name"]], axis=1) # should be index
+        gene_expression_columns = ge_stage.columns
         drug_columns = ['drug_encoding']
-        data = pd.merge(df_cell, df_drug_stage, on=params["canc_col_name"], how='inner')
-        df_cell = df_cell.drop([params["canc_col_name"]], axis=1)
-        gene_expression_columns = df_cell.columns
 
         # --------------------------------------------------------------------
         # [MODEL] Save X data
