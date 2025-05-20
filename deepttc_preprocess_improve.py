@@ -31,7 +31,7 @@ def run(params:Dict):
     # [Req] Validity check of feature representations
     # ------------------------------------------------------
     smi_to_drop = []
-    for i, row in smiles.iterows():
+    for i, row in smiles.iterrows():
         try:
             smi = drug2emb_encoder(row['SMILES'])
         except:
