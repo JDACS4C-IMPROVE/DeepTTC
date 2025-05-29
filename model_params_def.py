@@ -2,7 +2,7 @@ from improvelib.utils import str2bool
 
 preprocess_params = [
     {"name": "use_lincs",
-     "type": bool,
+     "type": str2bool,
      "default": True,
      "help": "Flag to indicate if landmark genes are used for gene selection.",
      },
