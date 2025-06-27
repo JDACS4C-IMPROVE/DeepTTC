@@ -19,11 +19,11 @@ filepath = Path(__file__).resolve().parent  # [Req]
 
 def run(params:Dict):
     print("Load omics data.")
-    ge = drp.get_x_data(file = params['cell_transcriptomic_file'], 
+    ge = frm.get_x_data(file = params['cell_transcriptomic_file'], 
                                         benchmark_dir = params['input_dir'], 
                                         column_name = params['canc_col_name'])
     print("Load drug data.")
-    smiles = drp.get_x_data(file = params['drug_smiles_file'], 
+    smiles = frm.get_x_data(file = params['drug_smiles_file'], 
                     benchmark_dir = params['input_dir'], 
                     column_name = params['drug_col_name'])
     smiles.columns = ['SMILES']
@@ -44,16 +44,16 @@ def run(params:Dict):
     # [Req] Determine preprocessing on training data
     # ------------------------------------------------------
     print("Load train response data.")
-    response_train = drp.get_response_data(split_file=params["train_split_file"], 
+    response_train = frm.get_y_data(split_file=params["train_split_file"], 
                                    benchmark_dir=params['input_dir'], 
                                    response_file=params['y_data_file'])
     print("Find intersection of training data.")
-    response_train = drp.get_response_with_features(response_train, ge, params['canc_col_name'])
-    response_train = drp.get_response_with_features(response_train, smiles, params['drug_col_name'])
-    ge_train = drp.get_features_in_response(ge, response_train, params['canc_col_name'])
+    response_train = frm.get_y_data_with_features(response_train, ge, params['canc_col_name'])
+    response_train = frm.get_y_data_with_features(response_train, smiles, params['drug_col_name'])
+    ge_train = frm.get_features_in_y_data(ge, response_train, params['canc_col_name'])
 
     print("Determine transformations.")
-    drp.determine_transform(ge_train, 'ge_transform', params['cell_transcriptomic_transform'], params['output_dir'])
+    frm.determine_transform(ge_train, 'ge_transform', params['cell_transcriptomic_transform'], params['output_dir'])
 
     # ------------------------------------------------------
     # [Req] Construct ML data for every stage (train, val, test)
@@ -67,16 +67,16 @@ def run(params:Dict):
     for stage, split_file in stages.items():
         print(f"Prepare data for stage {stage}.")
         print(f"Find intersection of {stage} data.")
-        response_stage = drp.get_response_data(split_file=split_file, 
+        response_stage = frm.get_y_data(split_file=split_file, 
                                 benchmark_dir=params['input_dir'], 
                                 response_file=params['y_data_file'])
-        response_stage = drp.get_response_with_features(response_stage, ge, params['canc_col_name'])
-        response_stage = drp.get_response_with_features(response_stage, smiles, params['drug_col_name'])
-        ge_stage = drp.get_features_in_response(ge, response_stage, params['canc_col_name'])
-        smiles_stage = drp.get_features_in_response(smiles, response_stage, params['drug_col_name'])
+        response_stage = frm.get_y_data_with_features(response_stage, ge, params['canc_col_name'])
+        response_stage = frm.get_y_data_with_features(response_stage, smiles, params['drug_col_name'])
+        ge_stage = frm.get_features_in_y_data(ge, response_stage, params['canc_col_name'])
+        smiles_stage = frm.get_features_in_y_data(smiles, response_stage, params['drug_col_name'])
 
         print(f"Transform {stage} data.")
-        ge_stage = drp.transform_data(ge_stage, 'ge_transform', params['output_dir'])
+        ge_stage = frm.transform_data(ge_stage, 'ge_transform', params['output_dir'])
 
         # Preprocess drug data
         #obj = DataEncoding(params, params["input_supp_data_dir"], params["canc_col_name"],
