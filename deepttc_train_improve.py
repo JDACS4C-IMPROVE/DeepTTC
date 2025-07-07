@@ -4,16 +4,12 @@ from typing import Dict
 
 # Model-specific imports
 import os
-import json
-# import pickle
 import pandas as pd
-from Step3_model import *
+from Step3_model import DeepTTC
 
 # [Req] IMPROVE imports
 from improvelib.applications.drug_response_prediction.config import DRPTrainConfig
-from improvelib.utils import str2bool
 import improvelib.utils as frm
-from improvelib.metrics import compute_metrics
 from model_params_def import train_params
 
 filepath = Path(__file__).resolve().parent # [Req]
@@ -48,14 +44,18 @@ def run(params:Dict):
     train_data = {}
     train_data['drug'] = pd.read_hdf(os.path.join(params["input_dir"],train_data_fname), key='drug')
     train_data['gene_expression'] = pd.read_hdf(os.path.join(params["input_dir"],train_data_fname), key='gene_expression')
+    train_data['label'] = pd.read_hdf(os.path.join(params["input_dir"],train_data_fname), key='label')
     val_data = {}
     val_data['drug'] = pd.read_hdf(os.path.join(params["input_dir"],val_data_fname), key='drug')
     val_data['gene_expression'] = pd.read_hdf(os.path.join(params["input_dir"],val_data_fname), key='gene_expression')
+    val_data['label'] = pd.read_hdf(os.path.join(params["input_dir"],val_data_fname), key='label')
 
     # --------------------------------------------------------------------
     # CUDA/CPU device, as needed
     # --------------------------------------------------------------------
     
+
+
     # --------------------------------------------------------------------
     # Prepare model
     # --------------------------------------------------------------------
@@ -67,8 +67,12 @@ def run(params:Dict):
     # --------------------------------------------------------------------
     # Train. Iterate over epochs.
     # --------------------------------------------------------------------
-    model = model.train(train_drug=train_data['drug'], train_rna=train_data['gene_expression'],
-                        val_drug=val_data['drug'], val_rna=val_data['gene_expression'])
+    model = model.train(train_drug=train_data['drug'], 
+                        train_rna=train_data['gene_expression'],
+                        train_label=train_data['label'],
+                        val_drug=val_data['drug'], 
+                        val_rna=val_data['gene_expression'],
+                        val_label=val_data['label'])
     print(f'Saving model to {modelpath}')
     model.save_model(modelpath)
     print("Model Saved :{}".format(modelpath))
@@ -77,8 +81,7 @@ def run(params:Dict):
     # Load best model and compute predictions
     # --------------------------------------------------------------------
     model.load_pretrained(modelpath)
-    y_label, y_pred, mse, rmse, person, p_val, spearman, s_p_val, CI = model.predict(
-        val_data['drug'], val_data['gene_expression'])
+    y_label, y_pred, mse, rmse, person, p_val, spearman, s_p_val, CI = model.predict(val_data['drug'], val_data['gene_expression'], val_data['label'])
 
     # ------------------------------------------------------
     # [Req] Save raw predictions in dataframe
@@ -105,16 +108,17 @@ def run(params:Dict):
 
     return val_scores
 
-
+# [Req]
 def main(args):
-    filepath = Path(__file__).resolve().parent
-
     cfg = DRPTrainConfig()
     params = cfg.initialize_parameters(pathToModelDir=filepath,
-                                       default_config="deepttc_params.txt",
-                                       additional_definitions=train_params
-                                       )
+                                       default_config="deepttc_params.ini",
+                                       additional_definitions=train_params)
+    timer_train = frm.Timer()
     val_scores = run(params)
+    timer_train.save_timer(dir_to_save=params["output_dir"], 
+                           filename='runtime_train.json', 
+                           extra_dict={"stage": "train"})
     print("\nFinished training model.")
 
 

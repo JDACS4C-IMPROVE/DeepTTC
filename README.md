@@ -81,7 +81,7 @@ git checkout v0.1.0
 
 Create conda env using `yml`
 ```
-conda env create -f environment.yml -n deepttc
+conda env create -f deepttc_environment.yml -n deepttc
 conda activate deepttc
 ```
 

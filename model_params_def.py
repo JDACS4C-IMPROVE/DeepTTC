@@ -1,27 +1,6 @@
 from improvelib.utils import str2bool
 
 preprocess_params = [
-    {"name": "use_lincs",
-     "type": str2bool,
-     "default": True,
-     "help": "Flag to indicate if landmark genes are used for gene selection.",
-     },
-    {"name": "scaling",
-     "type": str,
-     "default": "std",
-     "choice": ["std", "minmax", "miabs", "robust"],
-     "help": "Scaler for gene expression and Mordred descriptors data.",
-     },
-    {"name": "ge_scaler_fname",
-     "type": str,
-     "default": "x_data_gene_expression_scaler.gz",
-     "help": "File name to save the gene expression scaler object.",
-     },
-    {"name": "default_data_url",
-     "type": str,
-     "default": "'https://ftp.mcs.anl.gov/pub/candle/public/improve/reproducability/DeepTTC/'",
-     "help": "Link to model-specific data",
-     },
     {"name": "sample_col_name",
      "type": str,
      "default": "COSMIC_ID",
@@ -38,13 +17,13 @@ preprocess_params = [
 train_params = [
     {
         "name": "save_data",
-        "type": bool,
+        "type": str2bool,
         "default": False,
         "help": "Whether to save loaded data in pickle files",
     },
     {
         "name": "use_lincs",
-        "type": bool,
+        "type": str2bool,
         "default": False,
         "help": "Whether to use a LINCS subset of genes ONLY",
     },
@@ -62,7 +41,7 @@ train_params = [
     },
     {
         "name": "generate_input_data",
-        "type": bool,
+        "type": str2bool,
         "default": None,
         "help": "'True' for generating input data anew, 'False' for using stored data",
     },
