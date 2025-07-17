@@ -12,9 +12,11 @@ import pandas as pd
 import codecs
 from subword_nmt.apply_bpe import BPE
 
+filepath = Path(__file__).resolve().parent
+
 def drug2emb_encoder(smile):
-    vocab_path = "./drug_codes_chembl_freq_1500.txt"
-    sub_csv = pd.read_csv("./subword_units_map_chembl_freq_1500.csv")
+    vocab_path = filepath / "drug_codes_chembl_freq_1500.txt"
+    sub_csv = pd.read_csv(filepath / "subword_units_map_chembl_freq_1500.csv")
 
     bpe_codes_drug = codecs.open(vocab_path)
     dbpe = BPE(bpe_codes_drug, merges=-1, separator='')
