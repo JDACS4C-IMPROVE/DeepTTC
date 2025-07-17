@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import codecs
 from subword_nmt.apply_bpe import BPE
+from pathlib import Path
 
 filepath = Path(__file__).resolve().parent
 
