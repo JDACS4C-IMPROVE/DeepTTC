@@ -113,6 +113,9 @@ def build_common_data(params: Dict):
     gene_expression = omics_loader.dfs['cancer_gene_expression.tsv']
     df_drug = drugs_loader.dfs['drug_SMILES.tsv']
     df_drug = df_drug.reset_index()
+    # if there are more than two column only keep canSMILES
+    if len(df_drug.columns) > 2:
+        df_drug = df_drug[[params["drug_col_name"], 'canSMILES']]
     df_drug.columns = [params["drug_col_name"], "smiles"]
     params['drug_id'] = params["drug_col_name"]
     df_drug["SMILES"] = df_drug["smiles"]
