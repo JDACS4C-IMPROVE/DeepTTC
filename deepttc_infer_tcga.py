@@ -62,7 +62,7 @@ def run(params:Dict):
     # --------------------------------------------------------------------
     # [Req] Create data names for test set and build model path
     # --------------------------------------------------------------------
-    test_data_fname = frm.build_ml_data_file_name(params['data_format'], stage="test")
+    test_data_fname = frm.build_ml_data_file_name(params['data_format'], stage="tcga_test")
     
     modelpath = frm.build_model_path(model_file_name=params["model_file_name"],
                                     model_file_format=params["model_file_format"],
@@ -96,7 +96,7 @@ def run(params:Dict):
     frm.store_predictions_df(
         y_true=y_label,
         y_pred=y_pred,
-        stage="test",
+        stage="tcga_test",
         y_col_name=params["y_col_name"],
         output_dir=params["output_dir"],
         input_dir=params["input_data_dir"]
@@ -109,7 +109,7 @@ def run(params:Dict):
         test_scores = frm.compute_performance_scores(
             y_true=y_label,
             y_pred=y_pred,
-            stage="test",
+            stage="tcga_test",
             metric_type=params["metric_type"],
             output_dir=params["output_dir"]
         )
@@ -122,7 +122,7 @@ def main(args):
     cfg = DRPInferConfig()
     params = cfg.initialize_parameters(
         pathToModelDir=filepath,
-        default_config="deepttc_params.txt",
+        default_config="deepttc_params_tcga.txt",
         additional_definitions=infer_params
     )
     status = run(params)

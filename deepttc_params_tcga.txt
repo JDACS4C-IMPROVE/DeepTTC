@@ -10,43 +10,15 @@ default_data_url = https://ftp.mcs.anl.gov/pub/candle/public/improve/reproducabi
 benchmark_dir = ../IMP_data
 
 [Preprocess]
-train_split_file = CCLE_split_0_train.txt
-val_split_file = CCLE_split_0_val.txt
-test_split_file = CCLE_split_0_test.txt
+test_split_file = tcga_test_all.txt
 data_format = .h5
-y_data_files = [["response.tsv"]]
+y_data_files = [["response_tcga.tsv"]]
 x_data_canc_files = [["cancer_gene_expression.tsv", ["Gene_Symbol"]]]
 x_data_drug_files = [["drug_SMILES.tsv"]]
 use_lincs = True
 scaling = std
 output_dir = ./ml_data
 input_supp_data_dir = ./author_data
-
-[Train]
-data_format = .h5
-model_file_name = model
-model_file_format = .pt
-epochs = 20
-patience = 10
-batch_size = 64
-val_batch = 256
-loss = mse
-early_stop_metric = mse
-ckpt_save_interval = 5
-log_interval = 20
-cuda_name = cuda:0
-rng_seed=1
-input_dim_drug = 2586
-transformer_emb_size_drug = 128
-dropout = 0.1
-transformer_n_layer_drug = 8
-transformer_intermediate_size_drug = 512
-transformer_num_attention_heads_drug = 8
-transformer_attention_probs_dropout = 0.1
-transformer_hidden_dropout_rate = 0.1
-learning_rate = 1e-5
-input_dim_drug_classifier = 128
-input_dim_gene_classifier = 256
 
 [Infer]
 input_data_dir = ./ml_data

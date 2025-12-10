@@ -328,9 +328,9 @@ def build_stage_dependent_data(params: Dict,
     :params: scikit scaler: Scikit object for scaling data.
     """
     #args = params  # candle.ArgumentStruct(**params)
-    stages = {"train": params["train_split_file"],
-              "val": params["val_split_file"],
-              "test": params["test_split_file"]}
+    stages = {#"train": params["train_split_file"],
+              #"val": params["val_split_file"],
+              "tcga_test": params["test_split_file"]}
     # --------------------------------------------------------------------
     # [Req] Create dataloaders and get response data - DRP specific
     # --------------------------------------------------------------------
@@ -340,7 +340,7 @@ def build_stage_dependent_data(params: Dict,
             params[key] = params[key].strip('"')
     df_response = drp.DrugResponseLoader(params,
                                          split_file=stages[stage],
-                                         verbose=False).dfs["response.tsv"]
+                                         verbose=False).dfs["response_tcga.tsv"]
     
     # --------------------------------------------------------------------
     # [MODEL] Preprocess X data
@@ -363,6 +363,10 @@ def build_stage_dependent_data(params: Dict,
             print("Scaling object created is stored in: ", scaler_fname)
     else:
         # Use passed scikit scaler object
+        #scaler_fname = "/raid/ac.hraeder/DeepTTC/out.end_to_end_repurposing/preprocess/split_0/cell_xdata_scaler.gz"
+        scaler_fname = os.path.join(
+                params["output_dir"], "cell_xdata_scaler.gz")
+        scaler = joblib.load(scaler_fname)
         df_cell, _ = scale_df(df_cell, scaler=scaler)
 
     # Sub-select desired response column (y_col_name)
@@ -415,7 +419,8 @@ def run(params:Dict):
     """
 
     df_drug, df_cell_all = build_common_data(params)
-    stages = ["train", "val", "test"]
+    #stages = ["train", "val", "test"]
+    stages = ["tcga_test"]
     scaler = None
     for st in stages:
         print(f"Building stage: {st}")
@@ -434,7 +439,7 @@ def main(args):
     cfg = DRPPreprocessConfig()
     params = cfg.initialize_parameters(
         filepath,
-        default_config="deepttc_params.txt",
+        default_config="deepttc_params_tcga.txt",
         additional_definitions=preprocess_params)
 
     #download_model_data(params)
