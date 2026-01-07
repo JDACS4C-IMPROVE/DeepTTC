@@ -1,0 +1,40 @@
+[Global_Params]
+model_name = DeepTTC
+cancer_id = improve_sample_id
+drug_id = improve_chem_id
+target_id = auc
+sample_id = COSMIC_ID
+save_data = True
+predictions_output = output/results.tsv
+default_data_url = https://ftp.mcs.anl.gov/pub/candle/public/improve/reproducability/DeepTTC/
+benchmark_dir = ../IMP_data
+
+[Preprocess]
+test_split_file = tcga_test_all.txt
+data_format = .h5
+y_data_files = [["response_tcga.tsv"]]
+x_data_canc_files = [["cancer_gene_expression.tsv", ["Gene_Symbol"]]]
+x_data_drug_files = [["drug_SMILES.tsv"]]
+use_lincs = True
+scaling = std
+output_dir = ./ml_data
+input_supp_data_dir = ./author_data
+
+[Infer]
+input_data_dir = ./ml_data
+output_dir = ./ml_data
+data_format = .h5
+test_batch = 256
+input_model_dir = ./ml_data
+cuda_name = cuda:0
+input_dim_drug = 2586
+transformer_emb_size_drug = 128
+dropout = 0.1
+transformer_n_layer_drug = 8
+transformer_intermediate_size_drug = 512
+transformer_num_attention_heads_drug = 8
+transformer_attention_probs_dropout = 0.1
+transformer_hidden_dropout_rate = 0.1
+learning_rate = 1e-5
+input_dim_drug_classifier = 128
+input_dim_gene_classifier = 256
